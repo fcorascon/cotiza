@@ -51,6 +51,9 @@ export function EmpresaCard({ form }: EmpresaCardProps) {
                       placeholder="Ej. Comercializadora del Norte"
                       autoComplete="off"
                       {...field}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toUpperCase())
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -69,6 +72,9 @@ export function EmpresaCard({ form }: EmpresaCardProps) {
                       placeholder="Ej. Comercializadora del Norte, S.A. de C.V."
                       autoComplete="off"
                       {...field}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toUpperCase())
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -127,6 +133,9 @@ export function EmpresaCard({ form }: EmpresaCardProps) {
                       placeholder="Calle, número y colonia"
                       autoComplete="off"
                       {...field}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toUpperCase())
+                      }
                     />
                   </FormControl>
                   <FormMessage />

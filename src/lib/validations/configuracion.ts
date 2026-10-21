@@ -21,11 +21,13 @@ export const configuracionSchema = z.object({
   nombreComercial: z
     .string()
     .trim()
+    .toUpperCase()
     .min(2, "El nombre comercial debe tener al menos 2 caracteres")
     .max(120, "El nombre comercial no puede exceder 120 caracteres"),
   razonLegal: z
     .string()
     .trim()
+    .toUpperCase()
     .min(2, "La razón legal debe tener al menos 2 caracteres")
     .max(150, "La razón legal no puede exceder 150 caracteres"),
   rfc: z
@@ -39,6 +41,7 @@ export const configuracionSchema = z.object({
   direccion: z
     .string()
     .trim()
+    .toUpperCase()
     .min(5, "La dirección es obligatoria")
     .max(200, "La dirección no puede exceder 200 caracteres"),
   telefono: z

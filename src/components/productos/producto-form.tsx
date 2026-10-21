@@ -251,6 +251,9 @@ export function ProductoForm({
                       autoComplete="off"
                       maxLength={200}
                       {...field}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toUpperCase())
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -485,6 +488,9 @@ export function ProductoForm({
                       className="resize-none"
                       {...field}
                       value={field.value ?? ""}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toUpperCase())
+                      }
                     />
                   </FormControl>
                   <FormDescription>
@@ -512,7 +518,7 @@ export function ProductoForm({
                   </>
                 )}
               </Button>
-              {isEditing && (
+              {isEditing ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -521,6 +527,16 @@ export function ProductoForm({
                 >
                   <X className="mr-2 h-4 w-4" aria-hidden="true" />
                   Cancelar edición
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={submitting}
+                >
+                  <X className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Cancelar
                 </Button>
               )}
             </div>

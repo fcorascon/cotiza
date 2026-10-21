@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Package } from "lucide-react";
+import { Package, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ProductoForm } from "@/components/productos/producto-form";
 import { ProductosTable } from "@/components/productos/productos-table";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +26,11 @@ export function ProductosSection({ onIrA }: ProductosSectionProps) {
   const [ivas, setIvas] = useState<Iva[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<ProductoConRelaciones | null>(null);
+  // El formulario permanece oculto hasta que se presione "Nuevo"
+  // o se edite un registro; al inicio solo se muestra la tabla.
+  const [formVisible, setFormVisible] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+  const enfocarFormulario = useRef(false);
 
   const cargarDatos = useCallback(async () => {
     setLoading(true);
@@ -75,53 +80,86 @@ export function ProductosSection({ onIrA }: ProductosSectionProps) {
     cargarDatos();
   }, [cargarDatos]);
 
-  function handleEdit(producto: ProductoConRelaciones) {
-    setEditing(producto);
-    // En pantallas pequeñas, llevar la vista hacia el formulario de edición.
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+  // Una vez montado el formulario, desplazar la vista hacia él.
+  useEffect(() => {
+    if (formVisible && enfocarFormulario.current) {
+      enfocarFormulario.current = false;
       formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+  }, [formVisible]);
+
+  function abrirFormulario() {
+    enfocarFormulario.current = true;
+    setFormVisible(true);
+  }
+
+  function handleNuevo() {
+    setEditing(null);
+    abrirFormulario();
+  }
+
+  function handleEdit(producto: ProductoConRelaciones) {
+    setEditing(producto);
+    abrirFormulario();
   }
 
   function handleSaved() {
     setEditing(null);
+    setFormVisible(false);
     cargarDatos();
   }
 
   function handleCancelEdit() {
     setEditing(null);
+    setFormVisible(false);
   }
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Package className="h-5 w-5" aria-hidden="true" />
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Package className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Productos</h1>
+            <p className="text-sm text-muted-foreground">
+              Catálogo de productos y servicios que alimentará los conceptos de
+              sus presupuestos.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Productos</h1>
-          <p className="text-sm text-muted-foreground">
-            Catálogo de productos y servicios que alimentará los conceptos de
-            sus presupuestos.
-          </p>
-        </div>
+        {!formVisible && (
+          <Button onClick={handleNuevo} className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+            Nuevo producto
+          </Button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-6 2xl:grid-cols-3">
-        <div ref={formRef} className="2xl:col-span-1">
-          <ProductoForm
-            editing={editing}
-            onSaved={handleSaved}
-            onCancelEdit={handleCancelEdit}
-            unidades={unidades}
-            categorias={categorias}
-            ivas={ivas}
-            cargandoCatalogos={loading}
-            onIrA={onIrA}
-          />
-        </div>
+      <div
+        className={
+          formVisible
+            ? "grid grid-cols-1 items-start gap-6 2xl:grid-cols-3"
+            : undefined
+        }
+      >
+        {formVisible && (
+          <div ref={formRef} className="2xl:col-span-1">
+            <ProductoForm
+              editing={editing}
+              onSaved={handleSaved}
+              onCancelEdit={handleCancelEdit}
+              unidades={unidades}
+              categorias={categorias}
+              ivas={ivas}
+              cargandoCatalogos={loading}
+              onIrA={onIrA}
+            />
+          </div>
+        )}
 
-        <div className="2xl:col-span-2">
+        <div className={formVisible ? "2xl:col-span-2" : undefined}>
           <ProductosTable
             productos={productos}
             loading={loading}

@@ -141,6 +141,9 @@ export function UnidadForm({ editing, onSaved, onCancelEdit }: UnidadFormProps) 
                       placeholder="Ej. Metro cuadrado (m²)"
                       autoComplete="off"
                       {...field}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toUpperCase())
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -165,7 +168,7 @@ export function UnidadForm({ editing, onSaved, onCancelEdit }: UnidadFormProps) 
                   </>
                 )}
               </Button>
-              {isEditing && (
+              {isEditing ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -174,6 +177,16 @@ export function UnidadForm({ editing, onSaved, onCancelEdit }: UnidadFormProps) 
                 >
                   <X className="mr-2 h-4 w-4" aria-hidden="true" />
                   Cancelar edición
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={submitting}
+                >
+                  <X className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Cancelar
                 </Button>
               )}
             </div>

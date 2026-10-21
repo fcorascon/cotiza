@@ -32,7 +32,7 @@ export const productoSchema = z.object({
   descripcion: z
     .string()
     .trim()
-    .transform((valor) => valor.replace(/\s+/g, " "))
+    .transform((valor) => valor.replace(/\s+/g, " ").toUpperCase())
     .refine(
       (valor) => valor.length >= 3,
       "La descripción es requerida (mínimo 3 caracteres)"
@@ -88,7 +88,7 @@ export const productoSchema = z.object({
   notas: z
     .string()
     .trim()
-    .transform((valor) => valor.replace(/\s+/g, " "))
+    .transform((valor) => valor.replace(/\s+/g, " ").toUpperCase())
     .refine(
       (valor) => valor.length <= 500,
       "Las notas no pueden exceder 500 caracteres"

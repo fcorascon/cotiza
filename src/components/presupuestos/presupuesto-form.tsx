@@ -440,7 +440,9 @@ export function PresupuestoForm({
                 maxLength={1000}
                 className="resize-none"
                 value={observaciones}
-                onChange={(event) => setObservaciones(event.target.value)}
+                onChange={(event) =>
+                  setObservaciones(event.target.value.toUpperCase())
+                }
               />
             </div>
           </div>
@@ -790,7 +792,7 @@ export function PresupuestoForm({
                 </>
               )}
             </Button>
-            {isEditing && (
+            {isEditing ? (
               <Button
                 type="button"
                 variant="outline"
@@ -799,6 +801,16 @@ export function PresupuestoForm({
               >
                 <X className="mr-2 h-4 w-4" aria-hidden="true" />
                 Cancelar edición
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={submitting}
+              >
+                <X className="mr-2 h-4 w-4" aria-hidden="true" />
+                Cancelar
               </Button>
             )}
           </div>

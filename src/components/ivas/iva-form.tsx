@@ -166,7 +166,7 @@ export function IvaForm({ editing, onSaved, onCancelEdit }: IvaFormProps) {
                   </>
                 )}
               </Button>
-              {isEditing && (
+              {isEditing ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -175,6 +175,16 @@ export function IvaForm({ editing, onSaved, onCancelEdit }: IvaFormProps) {
                 >
                   <X className="mr-2 h-4 w-4" aria-hidden="true" />
                   Cancelar edición
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={submitting}
+                >
+                  <X className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Cancelar
                 </Button>
               )}
             </div>

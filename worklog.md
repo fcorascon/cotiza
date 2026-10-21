@@ -229,3 +229,26 @@ Stage Summary:
 - Causa raíz: anchos basados en viewport (sm/xl) no correspondían al ancho real de la tarjeta cuando la sección pasa a lado-a-lado; los SELECT/grid items no podían encoger (min-width auto).
 - Productos ahora se apila hasta 2xl; los SELECT usan min-w-0; tablas con anchos recalibrados en móvil y 1280px.
 - Diagnóstico reproducible con el eval de scrollWidth incluido en este registro para futuras revisiones.
+
+---
+Task ID: 12
+Agent: main (Z.ai)
+Task: 1) Convertir todos los campos de texto a mayúsculas. 2) Botón "Nuevo" que muestra el formulario oculto; al inicio solo las grids.
+
+Work Log:
+- Mayúsculas (3 capas para cobertura total):
+  · Schemas Zod (src/lib/validations/): .toUpperCase() en cliente (razonSocial, calle, numero, colonia, ciudad, estado; rfc ya lo tenía), unidad y categoria (en su transform de espacios), producto (descripcion, notas; codigoSat ya lo tenía), presupuesto (items descripcion/codigoSat/unidad + observaciones), configuracion (nombreComercial, razonLegal, direccion). Como las rutas API usan los mismos schemas con safeParse, el servidor también normaliza.
+  · Formularios: onChange con toUpperCase() para feedback inmediato en los mismos campos (cliente-form, unidad-form, categoria-form, producto-form descripcion+notas, presupuesto-form observaciones, empresa-card). Correos y teléfonos se quedan como estaban (email conserva .toLowerCase()).
+  · Migración de datos existentes: scripts/migrar-mayusculas.ts (bun+Prisma) — 3 clientes, 5 productos y 3 partidas actualizados; unidades/categorías ya estaban en mayúsculas; incluyó limpieza del texto literal "null" en notas de producto → null real. Primer intento falló porque el helper convertía "" en null y colonia es NOT NULL; corregido a solo-null. Diagnóstico previo (scripts/diagnostico-mayusculas.ts) confirmó cero colisiones de unicidad al pasar a mayúsculas (el script de migración fusiona duplicados si aparecieran).
+- Formularios ocultos + botón "Nuevo" en las 6 secciones (clientes, unidades, categorias, ivas, productos, presupuestos):
+  · Estado formVisible (default false): al entrar solo se ve la tabla; botón "Nuevo cliente/unidad/categoría/tasa de IVA/producto/presupuesto" (icono Plus) en el header (flex-col sm:flex-row justify-between, sin overflow).
+  · handleNuevo: resetea editing y abre el formulario; handleEdit: carga el registro y abre; al guardar o cancelar el formulario se vuelve a ocultar y el botón "Nuevo" reaparece. ScrollIntoView del formulario cuando se monta (useEffect + ref bandera, reemplaza el enfoque previo solo-móvil).
+  · El formulario se desmonta condicionalmente (layout: grid xl:grid-cols-5 / 2xl:grid-cols-3 solo cuando es visible; la tabla ocupa todo el ancho cuando está oculto). presupuestos-section apilado (space-y-6).
+  · Todos los formularios ahora muestran "Cancelar" también en modo creación (antes solo existía "Cancelar edición"), para poder cerrar el formulario sin guardar.
+- Verificación E2E (agent-browser, 1440px y 390px): estado inicial sin form en las 6 secciones; "prueba de mayusculas s.a. de c.v." se captura y guarda como "PRUEBA DE MAYUSCULAS S.A. DE C.V." (BD verificada, email intacto en minúsculas); edición de unidad carga "CAJA" en el formulario montado; observaciones de presupuesto "condiciones de pago a 30 dias" → "CONDICIONES DE PAGO A 30 DIAS"; tras guardar el form se oculta y reaparece "Nuevo"; móvil 390px sin scroll horizontal y con auto-scroll al form. Registro de prueba eliminado de la BD. Lint limpio, consola/servidor sin errores.
+- Capturas: download/nuevo-formulario-oculto-clientes.png, download/nuevo-formulario-abierto-clientes.png, download/nuevo-formulario-oculto-presupuestos.png, download/nuevo-movil-390-clientes.png, download/nuevo-movil-390-formulario.png.
+
+Stage Summary:
+- Regla global: todo texto capturado se almacena y muestra en MAYÚSCULAS (clientes, unidades, categorías, productos, presupuestos y datos de la empresa); correos/teléfonos excluidos. La Configuración existente no se migró (se convertirá al volver a guardar).
+- UX: las secciones abren en modo consulta (solo grid); el formulario aparece con "Nuevo" o al editar, y se cierra al guardar/cancelar.
+- Archivos: 5 validations/*.ts, 6 formularios, 6 secciones, empresa-card, 2 scripts nuevos (diagnostico + migración idempotente re-ejecutable).

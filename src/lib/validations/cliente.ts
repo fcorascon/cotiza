@@ -8,6 +8,7 @@ export const clienteSchema = z.object({
   razonSocial: z
     .string()
     .trim()
+    .toUpperCase()
     .min(3, "La razón social o nombre debe tener al menos 3 caracteres")
     .max(150, "La razón social no puede exceder 150 caracteres"),
   rfc: z
@@ -21,16 +22,19 @@ export const clienteSchema = z.object({
   calle: z
     .string()
     .trim()
+    .toUpperCase()
     .min(3, "La calle es obligatoria")
     .max(120, "La calle no puede exceder 120 caracteres"),
   numero: z
     .string()
     .trim()
+    .toUpperCase()
     .min(1, "El número exterior es obligatorio")
     .max(20, "El número no puede exceder 20 caracteres"),
   colonia: z
     .string()
     .trim()
+    .toUpperCase()
     .min(3, "La colonia es obligatoria")
     .max(120, "La colonia no puede exceder 120 caracteres"),
   codigoPostal: z
@@ -40,11 +44,13 @@ export const clienteSchema = z.object({
   ciudad: z
     .string()
     .trim()
+    .toUpperCase()
     .min(2, "La ciudad es obligatoria")
     .max(120, "La ciudad no puede exceder 120 caracteres"),
   estado: z
     .string()
     .trim()
+    .toUpperCase()
     .min(2, "El estado es obligatorio")
     .max(120, "El estado no puede exceder 120 caracteres"),
   telefono: z

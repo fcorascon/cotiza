@@ -168,6 +168,9 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
                       placeholder="Ej. Comercializadora del Noroeste, S.A. de C.V."
                       autoComplete="organization"
                       {...field}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toUpperCase())
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -217,6 +220,9 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
                         placeholder="Ej. Av. Reforma"
                         autoComplete="address-line1"
                         {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value.toUpperCase())
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -234,6 +240,9 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
                         placeholder="Ej. 1234"
                         autoComplete="off"
                         {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value.toUpperCase())
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -254,6 +263,9 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
                         placeholder="Ej. Centro Cívico"
                         autoComplete="address-line2"
                         {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value.toUpperCase())
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -298,6 +310,9 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
                         placeholder="Ej. Tijuana"
                         autoComplete="address-level2"
                         {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value.toUpperCase())
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -315,6 +330,9 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
                         placeholder="Ej. Baja California"
                         autoComplete="address-level1"
                         {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value.toUpperCase())
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -387,7 +405,7 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
                   </>
                 )}
               </Button>
-              {isEditing && (
+              {isEditing ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -396,6 +414,16 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
                 >
                   <X className="mr-2 h-4 w-4" aria-hidden="true" />
                   Cancelar edición
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={submitting}
+                >
+                  <X className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Cancelar
                 </Button>
               )}
             </div>

@@ -1,0 +1,810 @@
+     1→"use client";
+     2→
+     3→import { useEffect, useMemo, useState } from "react";
+     4→import {
+     5→  Loader2,
+     6→  Pencil,
+     7→  Plus,
+     8→  ReceiptText,
+     9→  Save,
+    10→  Trash2,
+    11→  X,
+    12→} from "lucide-react";
+    13→import { Button } from "@/components/ui/button";
+    14→import {
+    15→  Card,
+    16→  CardContent,
+    17→  CardDescription,
+    18→  CardHeader,
+    19→  CardTitle,
+    20→} from "@/components/ui/card";
+    21→import { Input } from "@/components/ui/input";
+    22→import { Label } from "@/components/ui/label";
+    23→import { Textarea } from "@/components/ui/textarea";
+    24→import {
+    25→  Select,
+    26→  SelectContent,
+    27→  SelectItem,
+    28→  SelectTrigger,
+    29→  SelectValue,
+    30→} from "@/components/ui/select";
+    31→import {
+    32→  Table,
+    33→  TableBody,
+    34→  TableCell,
+    35→  TableHead,
+    36→  TableHeader,
+    37→  TableRow,
+    38→} from "@/components/ui/table";
+    39→import { useToast } from "@/hooks/use-toast";
+    40→import {
+    41→  calcularTotalesPresupuesto,
+    42→  fechaHoyISO,
+    43→  redondear2,
+    44→} from "@/lib/presupuestos-utils";
+    45→import { formatearMoneda } from "@/lib/productos-utils";
+    46→import type {
+    47→  Cliente,
+    48→  Presupuesto,
+    49→  ProductoConRelaciones,
+    50→  SeccionApp,
+    51→} from "@/lib/types";
+    52→
+    53→type PresupuestoFormProps = {
+    54→  editing: Presupuesto | null;
+    55→  onSaved: () => void;
+    56→  onCancelEdit: () => void;
+    57→  clientes: Cliente[];
+    58→  productos: ProductoConRelaciones[];
+    59→  cargandoCatalogos: boolean;
+    60→  onIrA: (seccion: SeccionApp) => void;
+    61→};
+    62→
+    63→/** Partida temporal mientras se captura (cantidad como texto para edición fluida). */
+    64→type PartidaTemporal = {
+    65→  clave: string;
+    66→  productoId: string | null;
+    67→  descripcion: string;
+    68→  codigoSat: string | null;
+    69→  unidad: string | null;
+    70→  cantidadTexto: string;
+    71→  precioUnitario: number;
+    72→  ivaTasa: number;
+    73→};
+    74→
+    75→type ErroresFormulario = {
+    76→  clienteId?: string;
+    77→  fecha?: string;
+    78→  items?: string;
+    79→};
+    80→
+    81→/** Clave estable sin depender de crypto.randomUUID (funciona en cualquier navegador). */
+    82→let contadorClaves = 0;
+    83→function nuevaClave(): string {
+    84→  contadorClaves += 1;
+    85→  return `${Date.now()}-${contadorClaves}-${Math.random().toString(36).slice(2, 8)}`;
+    86→}
+    87→
+    88→/** Convierte la cantidad capturada como texto a número (NaN si es inválida). */
+    89→function cantidadANumero(texto: string): number {
+    90→  const normalizado = texto.trim().replace(",", ".");
+    91→  if (normalizado.length === 0) return NaN;
+    92→  return Number(normalizado);
+    93→}
+    94→
+    95→/**
+    96→ * Aviso que se muestra cuando un catálogo necesario (clientes o
+    97→ * productos) aún no tiene registros, con acceso directo a la sección.
+    98→ */
+    99→function AvisoCatalogoVacio({
+   100→  mensaje,
+   101→  destino,
+   102→  etiquetaBoton,
+   103→  onIrA,
+   104→}: {
+   105→  mensaje: string;
+   106→  destino: SeccionApp;
+   107→  etiquetaBoton: string;
+   108→  onIrA: (seccion: SeccionApp) => void;
+   109→}) {
+   110→  return (
+   111→    <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+   112→      <span className="min-w-0 flex-1">{mensaje}</span>
+   113→      <Button
+   114→        type="button"
+   115→        variant="outline"
+   116→        size="sm"
+   117→        className="h-6 border-amber-400 px-2 text-xs text-amber-900 hover:bg-amber-100"
+   118→        onClick={() => onIrA(destino)}
+   119→      >
+   120→        {etiquetaBoton}
+   121→      </Button>
+   122→    </div>
+   123→  );
+   124→}
+   125→
+   126→function MensajeError({ children }: { children: string }) {
+   127→  return <p className="text-sm font-medium text-destructive">{children}</p>;
+   128→}
+   129→
+   130→export function PresupuestoForm({
+   131→  editing,
+   132→  onSaved,
+   133→  onCancelEdit,
+   134→  clientes,
+   135→  productos,
+   136→  cargandoCatalogos,
+   137→  onIrA,
+   138→}: PresupuestoFormProps) {
+   139→  const { toast } = useToast();
+   140→  const [submitting, setSubmitting] = useState(false);
+   141→  const isEditing = Boolean(editing);
+   142→
+   143→  // Datos generales
+   144→  const [clienteId, setClienteId] = useState("");
+   145→  const [fecha, setFecha] = useState(fechaHoyISO);
+   146→  const [observaciones, setObservaciones] = useState("");
+   147→
+   148→  // Selector de productos
+   149→  const [productoSeleccionado, setProductoSeleccionado] = useState("");
+   150→  const [cantidadNueva, setCantidadNueva] = useState("1");
+   151→  const [errorCantidadNueva, setErrorCantidadNueva] = useState<string | null>(
+   152→    null
+   153→  );
+   154→
+   155→  // Partidas del presupuesto
+   156→  const [items, setItems] = useState<PartidaTemporal[]>([]);
+   157→  const [errores, setErrores] = useState<ErroresFormulario>({});
+   158→
+   159→  // Al seleccionar un presupuesto para editar, se carga completo.
+   160→  useEffect(() => {
+   161→    if (editing) {
+   162→      setClienteId(editing.clienteId);
+   163→      setFecha(editing.fecha);
+   164→      setObservaciones(editing.observaciones ?? "");
+   165→      setItems(
+   166→        editing.items.map((item) => ({
+   167→          clave: item.id,
+   168→          productoId: item.productoId,
+   169→          descripcion: item.descripcion,
+   170→          codigoSat: item.codigoSat,
+   171→          unidad: item.unidad,
+   172→          cantidadTexto: String(item.cantidad),
+   173→          precioUnitario: item.precioUnitario,
+   174→          ivaTasa: item.ivaTasa,
+   175→        }))
+   176→      );
+   177→      setProductoSeleccionado("");
+   178→      setCantidadNueva("1");
+   179→      setErrores({});
+   180→      setErrorCantidadNueva(null);
+   181→    }
+   182→  }, [editing]);
+   183→
+   184→  const productoEnCatalogo = productos.find(
+   185→    (p) => p.id === productoSeleccionado
+   186→  );
+   187→
+   188→  // Totales en vivo: sub total + IVA (por tasa) + total.
+   189→  const totales = useMemo(
+   190→    () =>
+   191→      calcularTotalesPresupuesto(
+   192→        items.map((item) => ({
+   193→          cantidad:
+   194→            Number.isFinite(cantidadANumero(item.cantidadTexto)) &&
+   195→            cantidadANumero(item.cantidadTexto) > 0
+   196→              ? cantidadANumero(item.cantidadTexto)
+   197→              : 0,
+   198→          precioUnitario: item.precioUnitario,
+   199→          ivaTasa: item.ivaTasa,
+   200→        }))
+   201→      ),
+   202→    [items]
+   203→  );
+   204→
+   205→  const clienteNombre = clientes.find((c) => c.id === clienteId)?.razonSocial;
+   206→
+   207→  function limpiarFormulario() {
+   208→    setClienteId("");
+   209→    setFecha(fechaHoyISO());
+   210→    setObservaciones("");
+   211→    setItems([]);
+   212→    setProductoSeleccionado("");
+   213→    setCantidadNueva("1");
+   214→    setErrores({});
+   215→    setErrorCantidadNueva(null);
+   216→  }
+   217→
+   218→  function handleCancel() {
+   219→    limpiarFormulario();
+   220→    onCancelEdit();
+   221→  }
+   222→
+   223→  function agregarProducto() {
+   224→    if (!productoEnCatalogo) return;
+   225→    const cantidad = cantidadANumero(cantidadNueva);
+   226→    if (!Number.isFinite(cantidad) || cantidad <= 0) {
+   227→      setErrorCantidadNueva("Ingrese una cantidad mayor a 0");
+   228→      return;
+   229→    }
+   230→    setErrorCantidadNueva(null);
+   231→    setItems((previo) => [
+   232→      ...previo,
+   233→      {
+   234→        clave: nuevaClave(),
+   235→        productoId: productoEnCatalogo.id,
+   236→        descripcion: productoEnCatalogo.descripcion,
+   237→        codigoSat: productoEnCatalogo.codigoSat,
+   238→        unidad: productoEnCatalogo.unidad.unidad,
+   239→        cantidadTexto: String(cantidad),
+   240→        precioUnitario: productoEnCatalogo.subtotal,
+   241→        ivaTasa: productoEnCatalogo.iva.tasa,
+   242→      },
+   243→    ]);
+   244→    setProductoSeleccionado("");
+   245→    setCantidadNueva("1");
+   246→    setErrores((previo) => ({ ...previo, items: undefined }));
+   247→  }
+   248→
+   249→  function quitarPartida(clave: string) {
+   250→    setItems((previo) => previo.filter((item) => item.clave !== clave));
+   251→  }
+   252→
+   253→  function cambiarCantidad(clave: string, texto: string) {
+   254→    setItems((previo) =>
+   255→      previo.map((item) =>
+   256→        item.clave === clave ? { ...item, cantidadTexto: texto } : item
+   257→      )
+   258→    );
+   259→  }
+   260→
+   261→  function validarFormulario(): ErroresFormulario {
+   262→    const erroresLocales: ErroresFormulario = {};
+   263→    if (!clienteId) {
+   264→      erroresLocales.clienteId = "Seleccione un cliente";
+   265→    }
+   266→    if (!fecha) {
+   267→      erroresLocales.fecha = "Seleccione una fecha";
+   268→    }
+   269→    if (items.length === 0) {
+   270→      erroresLocales.items =
+   271→        "Agregue al menos un producto al presupuesto";
+   272→    } else {
+   273→      const indiceInvalido = items.findIndex((item) => {
+   274→        const cantidad = cantidadANumero(item.cantidadTexto);
+   275→        return !Number.isFinite(cantidad) || cantidad <= 0;
+   276→      });
+   277→      if (indiceInvalido >= 0) {
+   278→        erroresLocales.items = `La cantidad de "${items[indiceInvalido].descripcion}" debe ser mayor a 0`;
+   279→      }
+   280→    }
+   281→    return erroresLocales;
+   282→  }
+   283→
+   284→  async function onSubmit(event: React.FormEvent) {
+   285→    event.preventDefault();
+   286→
+   287→    const erroresLocales = validarFormulario();
+   288→    setErrores(erroresLocales);
+   289→    const hayErrores = Object.values(erroresLocales).some(Boolean);
+   290→    if (hayErrores) {
+   291→      toast({
+   292→        variant: "destructive",
+   293→        title: "Datos incompletos",
+   294→        description: Object.values(erroresLocales).find(Boolean) ?? "Revise los datos del presupuesto.",
+   295→      });
+   296→      return;
+   297→    }
+   298→
+   299→    setSubmitting(true);
+   300→    try {
+   301→      const payload = {
+   302→        clienteId,
+   303→        fecha,
+   304→        observaciones: observaciones.trim(),
+   305→        items: items.map((item) => ({
+   306→          productoId: item.productoId,
+   307→          descripcion: item.descripcion,
+   308→          codigoSat: item.codigoSat,
+   309→          unidad: item.unidad,
+   310→          cantidad: cantidadANumero(item.cantidadTexto),
+   311→          precioUnitario: item.precioUnitario,
+   312→          ivaTasa: item.ivaTasa,
+   313→        })),
+   314→      };
+   315→
+   316→      const url = editing ? `/api/presupuestos/${editing.id}` : "/api/presupuestos";
+   317→      const response = await fetch(url, {
+   318→        method: editing ? "PUT" : "POST",
+   319→        headers: { "Content-Type": "application/json" },
+   320→        body: JSON.stringify(payload),
+   321→      });
+   322→
+   323→      const data = await response.json().catch(() => ({}));
+   324→
+   325→      if (!response.ok) {
+   326→        if (data?.fieldErrors && typeof data.fieldErrors === "object") {
+   327→          setErrores(data.fieldErrors as ErroresFormulario);
+   328→        }
+   329→        toast({
+   330→          variant: "destructive",
+   331→          title: "No se pudo guardar el presupuesto",
+   332→          description: data?.error ?? "Revise los datos e intente de nuevo.",
+   333→        });
+   334→        return;
+   335→      }
+   336→
+   337→      toast({
+   338→        title: isEditing ? "Presupuesto actualizado" : "Presupuesto registrado",
+   339→        description: `El presupuesto para "${clienteNombre}" se guardó correctamente por ${formatearMoneda(totales.total)}.`,
+   340→      });
+   341→
+   342→      limpiarFormulario();
+   343→      onSaved();
+   344→    } catch {
+   345→      toast({
+   346→        variant: "destructive",
+   347→        title: "Error de conexión",
+   348→        description:
+   349→          "No fue posible comunicar con el servidor. Intente nuevamente.",
+   350→      });
+   351→    } finally {
+   352→      setSubmitting(false);
+   353→    }
+   354→  }
+   355→
+   356→  return (
+   357→    <Card>
+   358→      <CardHeader>
+   359→        <CardTitle className="flex items-center gap-2 text-lg">
+   360→          {isEditing ? (
+   361→            <>
+   362→              <Pencil className="h-4 w-4 text-primary" aria-hidden="true" />
+   363→              Editar presupuesto
+   364→            </>
+   365→          ) : (
+   366→            <>
+   367→              <ReceiptText className="h-4 w-4 text-primary" aria-hidden="true" />
+   368→              Registrar presupuesto
+   369→            </>
+   370→          )}
+   371→        </CardTitle>
+   372→        <CardDescription>
+   373→          {isEditing
+   374→            ? `Modificando el presupuesto de "${editing?.cliente.razonSocial}" del ${editing?.fecha.split("-").reverse().join("/")}.`
+   375→            : "Seleccione el cliente, la fecha y agregue los productos del catálogo."}
+   376→        </CardDescription>
+   377→      </CardHeader>
+   378→
+   379→      <CardContent>
+   380→        <form onSubmit={onSubmit} className="space-y-6" noValidate>
+   381→          {/* ── Datos generales ─────────────────────────────────────── */}
+   382→          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+   383→            <div className="space-y-2">
+   384→              <Label htmlFor="cliente-presupuesto">Cliente</Label>
+   385→              <Select
+   386→                value={clienteId}
+   387→                onValueChange={(valor) => {
+   388→                  setClienteId(valor);
+   389→                  setErrores((previo) => ({ ...previo, clienteId: undefined }));
+   390→                }}
+   391→              >
+   392→                <SelectTrigger id="cliente-presupuesto">
+   393→                  <SelectValue placeholder="Seleccione el cliente" />
+   394→                </SelectTrigger>
+   395→                <SelectContent>
+   396→                  {clientes.map((cliente) => (
+   397→                    <SelectItem key={cliente.id} value={cliente.id}>
+   398→                      {cliente.razonSocial}
+   399→                    </SelectItem>
+   400→                  ))}
+   401→                </SelectContent>
+   402→              </Select>
+   403→              {errores.clienteId && <MensajeError>{errores.clienteId}</MensajeError>}
+   404→              {!cargandoCatalogos && clientes.length === 0 && (
+   405→                <AvisoCatalogoVacio
+   406→                  mensaje="Aún no hay clientes registrados."
+   407→                  destino="clientes"
+   408→                  etiquetaBoton="Ir a Clientes"
+   409→                  onIrA={onIrA}
+   410→                />
+   411→              )}
+   412→            </div>
+   413→
+   414→            <div className="space-y-2">
+   415→              <Label htmlFor="fecha-presupuesto">Fecha</Label>
+   416→              <Input
+   417→                id="fecha-presupuesto"
+   418→                type="date"
+   419→                value={fecha}
+   420→                onChange={(event) => {
+   421→                  setFecha(event.target.value);
+   422→                  setErrores((previo) => ({ ...previo, fecha: undefined }));
+   423→                }}
+   424→                className="tabular-nums"
+   425→              />
+   426→              {errores.fecha && <MensajeError>{errores.fecha}</MensajeError>}
+   427→            </div>
+   428→
+   429→            <div className="space-y-2 sm:col-span-2">
+   430→              <Label htmlFor="observaciones-presupuesto">
+   431→                Observaciones{" "}
+   432→                <span className="font-normal text-muted-foreground">
+   433→                  (opcional)
+   434→                </span>
+   435→              </Label>
+   436→              <Textarea
+   437→                id="observaciones-presupuesto"
+   438→                placeholder="Aclaraciones u observaciones para el cliente (condiciones, vigencia, entrega)…"
+   439→                rows={2}
+   440→                maxLength={1000}
+   441→                className="resize-none"
+   442→                value={observaciones}
+   443→                onChange={(event) => setObservaciones(event.target.value)}
+   444→              />
+   445→            </div>
+   446→          </div>
+   447→
+   448→          {/* ── Productos ───────────────────────────────────────────── */}
+   449→          <div className="space-y-3 rounded-lg border p-4">
+   450→            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_120px_auto] sm:items-start">
+   451→              <div className="space-y-2">
+   452→                <Label htmlFor="producto-presupuesto">Producto</Label>
+   453→                <Select
+   454→                  value={productoSeleccionado}
+   455→                  onValueChange={(valor) => {
+   456→                    setProductoSeleccionado(valor);
+   457→                    setErrorCantidadNueva(null);
+   458→                  }}
+   459→                >
+   460→                  <SelectTrigger id="producto-presupuesto">
+   461→                    <SelectValue
+   462→                      placeholder={
+   463→                        cargandoCatalogos
+   464→                          ? "Cargando productos…"
+   465→                          : "Seleccione un producto"
+   466→                      }
+   467→                    />
+   468→                  </SelectTrigger>
+   469→                  <SelectContent>
+   470→                    {productos.map((producto) => (
+   471→                      <SelectItem key={producto.id} value={producto.id}>
+   472→                        {producto.descripcion}
+   473→                      </SelectItem>
+   474→                    ))}
+   475→                  </SelectContent>
+   476→                </Select>
+   477→                {!cargandoCatalogos && productos.length === 0 && (
+   478→                  <AvisoCatalogoVacio
+   479→                    mensaje="Aún no hay productos en el catálogo."
+   480→                    destino="productos"
+   481→                    etiquetaBoton="Ir a Productos"
+   482→                    onIrA={onIrA}
+   483→                  />
+   484→                )}
+   485→              </div>
+   486→
+   487→              <div className="space-y-2">
+   488→                <Label htmlFor="cantidad-presupuesto">Cantidad</Label>
+   489→                <Input
+   490→                  id="cantidad-presupuesto"
+   491→                  type="number"
+   492→                  min="0"
+   493→                  step="any"
+   494→                  inputMode="decimal"
+   495→                  value={cantidadNueva}
+   496→                  onChange={(event) => {
+   497→                    setCantidadNueva(event.target.value);
+   498→                    setErrorCantidadNueva(null);
+   499→                  }}
+   500→                  className="tabular-nums"
+   501→                  aria-label="Cantidad del producto a agregar"
+   502→                />
+   503→              </div>
+   504→
+   505→              <div className="flex items-end gap-2">
+   506→                <Button
+   507→                  type="button"
+   508→                  variant="secondary"
+   509→                  onClick={agregarProducto}
+   510→                  disabled={!productoSeleccionado}
+   511→                  className="w-full sm:w-auto"
+   512→                >
+   513→                  <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+   514→                  Agregar
+   515→                </Button>
+   516→              </div>
+   517→            </div>
+   518→
+   519→            {errorCantidadNueva && (
+   520→              <MensajeError>{errorCantidadNueva}</MensajeError>
+   521→            )}
+   522→
+   523→            {/* Datos del producto seleccionado (fotografía que se agregará) */}
+   524→            {productoEnCatalogo && (
+   525→              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+   526→                <span className="font-mono" title="Código SAT">
+   527→                  Cód. SAT: {productoEnCatalogo.codigoSat}
+   528→                </span>
+   529→                <span>Unidad: {productoEnCatalogo.unidad.unidad}</span>
+   530→                <span className="tabular-nums">
+   531→                  Precio unitario:{" "}
+   532→                  <strong className="text-foreground">
+   533→                    {formatearMoneda(productoEnCatalogo.subtotal)}
+   534→                  </strong>
+   535→                </span>
+   536→                <span>IVA: {productoEnCatalogo.iva.tasa}%</span>
+   537→              </div>
+   538→            )}
+   539→
+   540→            {errores.items && <MensajeError>{errores.items}</MensajeError>}
+   541→
+   542→            {/* Partidas del presupuesto */}
+   543→            {items.length === 0 ? (
+   544→              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-8 text-center">
+   545→                <ReceiptText
+   546→                  className="mb-2 h-8 w-8 text-muted-foreground/50"
+   547→                  aria-hidden="true"
+   548→                />
+   549→                <p className="text-sm font-medium">
+   550→                  Aún no ha agregado productos
+   551→                </p>
+   552→                <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+   553→                  Seleccione un producto del catálogo, indique la cantidad y
+   554→                  presione &quot;Agregar&quot; para formar el presupuesto.
+   555→                </p>
+   556→              </div>
+   557→            ) : (
+   558→              <>
+   559→                {/* Tabla (tableta / escritorio) */}
+   560→                <div className="hidden overflow-x-auto sm:block">
+   561→                  <Table>
+   562→                    <TableHeader>
+   563→                      <TableRow>
+   564→                        <TableHead className="w-[38%]">Producto</TableHead>
+   565→                        <TableHead className="w-[14%]">Cantidad</TableHead>
+   566→                        <TableHead className="w-[16%] whitespace-nowrap px-2 text-right">
+   567→                          P. unitario
+   568→                        </TableHead>
+   569→                        <TableHead className="w-[8%] px-2 text-right">
+   570→                          IVA
+   571→                        </TableHead>
+   572→                        <TableHead className="w-[16%] whitespace-nowrap px-2 text-right">
+   573→                          Importe
+   574→                        </TableHead>
+   575→                        <TableHead className="w-[8%] text-right">
+   576→                          <span className="sr-only">Quitar</span>
+   577→                        </TableHead>
+   578→                      </TableRow>
+   579→                    </TableHeader>
+   580→                    <TableBody>
+   581→                      {items.map((item) => {
+   582→                        const cantidad = cantidadANumero(item.cantidadTexto);
+   583→                        const importe =
+   584→                          Number.isFinite(cantidad) && cantidad > 0
+   585→                            ? redondear2(cantidad * item.precioUnitario)
+   586→                            : 0;
+   587→                        return (
+   588→                          <TableRow key={item.clave}>
+   589→                            <TableCell className="align-top">
+   590→                              <span
+   591→                                className="block truncate font-medium"
+   592→                                title={item.descripcion}
+   593→                              >
+   594→                                {item.descripcion}
+   595→                              </span>
+   596→                              <p
+   597→                                className="truncate font-mono text-xs text-muted-foreground"
+   598→                                title={
+   599→                                  item.codigoSat
+   600→                                    ? `Código SAT: ${item.codigoSat}`
+   601→                                    : undefined
+   602→                                }
+   603→                              >
+   604→                                {item.codigoSat ? `Cód. SAT: ${item.codigoSat}` : ""}
+   605→                                {item.codigoSat && item.unidad ? " · " : ""}
+   606→                                {item.unidad ?? ""}
+   607→                              </p>
+   608→                            </TableCell>
+   609→                            <TableCell className="align-top">
+   610→                              <Input
+   611→                                type="number"
+   612→                                min="0"
+   613→                                step="any"
+   614→                                inputMode="decimal"
+   615→                                value={item.cantidadTexto}
+   616→                                onChange={(event) =>
+   617→                                  cambiarCantidad(item.clave, event.target.value)
+   618→                                }
+   619→                                className="h-8 w-20 tabular-nums"
+   620→                                aria-label={`Cantidad de ${item.descripcion}`}
+   621→                              />
+   622→                            </TableCell>
+   623→                            <TableCell className="whitespace-nowrap px-2 align-top text-right text-sm tabular-nums">
+   624→                              {formatearMoneda(item.precioUnitario)}
+   625→                            </TableCell>
+   626→                            <TableCell className="whitespace-nowrap px-2 align-top text-right text-sm tabular-nums text-muted-foreground">
+   627→                              {item.ivaTasa}%
+   628→                            </TableCell>
+   629→                            <TableCell className="whitespace-nowrap px-2 align-top text-right text-sm font-semibold tabular-nums">
+   630→                              {formatearMoneda(importe)}
+   631→                            </TableCell>
+   632→                            <TableCell className="text-right align-top">
+   633→                              <Button
+   634→                                type="button"
+   635→                                variant="ghost"
+   636→                                size="icon"
+   637→                                className="h-8 w-8 text-destructive hover:text-destructive"
+   638→                                onClick={() => quitarPartida(item.clave)}
+   639→                                aria-label={`Quitar ${item.descripcion}`}
+   640→                              >
+   641→                                <Trash2 className="h-4 w-4" aria-hidden="true" />
+   642→                              </Button>
+   643→                            </TableCell>
+   644→                          </TableRow>
+   645→                        );
+   646→                      })}
+   647→                    </TableBody>
+   648→                  </Table>
+   649→                </div>
+   650→
+   651→                {/* Tarjetas (móvil) */}
+   652→                <div className="space-y-3 sm:hidden">
+   653→                  {items.map((item) => {
+   654→                    const cantidad = cantidadANumero(item.cantidadTexto);
+   655→                    const importe =
+   656→                      Number.isFinite(cantidad) && cantidad > 0
+   657→                        ? redondear2(cantidad * item.precioUnitario)
+   658→                        : 0;
+   659→                    return (
+   660→                      <div
+   661→                        key={item.clave}
+   662→                        className="rounded-lg border p-3"
+   663→                      >
+   664→                        <div className="flex items-start justify-between gap-2">
+   665→                          <div className="min-w-0">
+   666→                            <p
+   667→                              className="truncate text-sm font-medium"
+   668→                              title={item.descripcion}
+   669→                            >
+   670→                              {item.descripcion}
+   671→                            </p>
+   672→                            <p className="truncate font-mono text-xs text-muted-foreground">
+   673→                              {item.codigoSat ? `Cód. SAT: ${item.codigoSat}` : ""}
+   674→                              {item.codigoSat && item.unidad ? " · " : ""}
+   675→                              {item.unidad ?? ""}
+   676→                            </p>
+   677→                          </div>
+   678→                          <Button
+   679→                            type="button"
+   680→                            variant="ghost"
+   681→                            size="icon"
+   682→                            className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+   683→                            onClick={() => quitarPartida(item.clave)}
+   684→                            aria-label={`Quitar ${item.descripcion}`}
+   685→                          >
+   686→                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+   687→                          </Button>
+   688→                        </div>
+   689→                        <div className="mt-2 flex items-end justify-between gap-3">
+   690→                          <div className="space-y-1">
+   691→                            <Label
+   692→                              htmlFor={`cantidad-${item.clave}`}
+   693→                              className="text-xs text-muted-foreground"
+   694→                            >
+   695→                              Cantidad
+   696→                            </Label>
+   697→                            <Input
+   698→                              id={`cantidad-${item.clave}`}
+   699→                              type="number"
+   700→                              min="0"
+   701→                              step="any"
+   702→                              inputMode="decimal"
+   703→                              value={item.cantidadTexto}
+   704→                              onChange={(event) =>
+   705→                                cambiarCantidad(item.clave, event.target.value)
+   706→                              }
+   707→                              className="h-8 w-20 tabular-nums"
+   708→                              aria-label={`Cantidad de ${item.descripcion}`}
+   709→                            />
+   710→                          </div>
+   711→                          <p className="text-right text-sm tabular-nums">
+   712→                            <span className="text-xs text-muted-foreground">
+   713→                              {formatearMoneda(item.precioUnitario)} c/u · IVA{" "}
+   714→                              {item.ivaTasa}%
+   715→                            </span>
+   716→                            <span className="block font-semibold">
+   717→                              {formatearMoneda(importe)}
+   718→                            </span>
+   719→                          </p>
+   720→                        </div>
+   721→                      </div>
+   722→                    );
+   723→                  })}
+   724→                </div>
+   725→
+   726→                {/* ── Totales: SUB TOTAL + IVA + TOTAL ──────────────── */}
+   727→                <div
+   728→                  className="ml-auto w-full max-w-xs space-y-1.5 rounded-lg border bg-muted/40 p-4"
+   729→                  aria-live="polite"
+   730→                >
+   731→                  <div className="flex items-center justify-between text-sm">
+   732→                    <span className="text-muted-foreground">SUB TOTAL</span>
+   733→                    <span className="font-medium tabular-nums">
+   734→                      {formatearMoneda(totales.subtotal)}
+   735→                    </span>
+   736→                  </div>
+   737→                  {totales.ivaPorTasa.length > 1 ? (
+   738→                    totales.ivaPorTasa.map((linea) => (
+   739→                      <div
+   740→                        key={linea.tasa}
+   741→                        className="flex items-center justify-between text-sm"
+   742→                      >
+   743→                        <span className="text-muted-foreground">
+   744→                          IVA {linea.tasa}%
+   745→                        </span>
+   746→                        <span className="tabular-nums">
+   747→                          {formatearMoneda(linea.importe)}
+   748→                        </span>
+   749→                      </div>
+   750→                    ))
+   751→                  ) : (
+   752→                    <div className="flex items-center justify-between text-sm">
+   753→                      <span className="text-muted-foreground">
+   754→                        IVA
+   755→                        {totales.ivaPorTasa.length === 1
+   756→                          ? ` (${totales.ivaPorTasa[0].tasa}%)`
+   757→                          : ""}
+   758→                      </span>
+   759→                      <span className="tabular-nums">
+   760→                        {formatearMoneda(totales.iva)}
+   761→                      </span>
+   762→                    </div>
+   763→                  )}
+   764→                  <div className="flex items-center justify-between border-t pt-2">
+   765→                    <span className="text-sm font-semibold">TOTAL</span>
+   766→                    <span className="text-xl font-bold tabular-nums text-primary">
+   767→                      {formatearMoneda(totales.total)}
+   768→                    </span>
+   769→                  </div>
+   770→                </div>
+   771→              </>
+   772→            )}
+   773→          </div>
+   774→
+   775→          {/* ── Acciones ──────────────────────────────────────────────── */}
+   776→          <div className="flex flex-col gap-2 sm:flex-row">
+   777→            <Button type="submit" disabled={submitting} className="sm:flex-1">
+   778→              {submitting ? (
+   779→                <>
+   780→                  <Loader2
+   781→                    className="mr-2 h-4 w-4 animate-spin"
+   782→                    aria-hidden="true"
+   783→                  />
+   784→                  Guardando…
+   785→                </>
+   786→              ) : (
+   787→                <>
+   788→                  <Save className="mr-2 h-4 w-4" aria-hidden="true" />
+   789→                  {isEditing ? "Guardar cambios" : "Guardar presupuesto"}
+   790→                </>
+   791→              )}
+   792→            </Button>
+   793→            {isEditing && (
+   794→              <Button
+   795→                type="button"
+   796→                variant="outline"
+   797→                onClick={handleCancel}
+   798→                disabled={submitting}
+   799→              >
+   800→                <X className="mr-2 h-4 w-4" aria-hidden="true" />
+   801→                Cancelar edición
+   802→              </Button>
+   803→            )}
+   804→          </div>
+   805→        </form>
+   806→      </CardContent>
+   807→    </Card>
+   808→  );
+   809→}
+   810→

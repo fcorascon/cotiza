@@ -150,6 +150,9 @@ export function CategoriaForm({
                       placeholder="Ej. Artículos de oficina"
                       autoComplete="off"
                       {...field}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toUpperCase())
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -174,7 +177,7 @@ export function CategoriaForm({
                   </>
                 )}
               </Button>
-              {isEditing && (
+              {isEditing ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -183,6 +186,16 @@ export function CategoriaForm({
                 >
                   <X className="mr-2 h-4 w-4" aria-hidden="true" />
                   Cancelar edición
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={submitting}
+                >
+                  <X className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Cancelar
                 </Button>
               )}
             </div>

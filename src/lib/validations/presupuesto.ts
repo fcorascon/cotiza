@@ -21,7 +21,7 @@ const itemPresupuestoSchema = z.object({
   descripcion: z
     .string()
     .trim()
-    .transform((valor) => valor.replace(/\s+/g, " "))
+    .transform((valor) => valor.replace(/\s+/g, " ").toUpperCase())
     .refine((valor) => valor.length > 0, "El producto de la partida es requerido")
     .refine(
       (valor) => valor.length <= 200,
@@ -32,6 +32,7 @@ const itemPresupuestoSchema = z.object({
     .string()
     .trim()
     .max(20, "El código SAT no puede exceder 20 caracteres")
+    .transform((valor) => valor.toUpperCase())
     .nullable()
     .optional()
     .transform((valor) => (valor && valor.length > 0 ? valor : null)),
@@ -40,6 +41,7 @@ const itemPresupuestoSchema = z.object({
     .string()
     .trim()
     .max(60, "La unidad no puede exceder 60 caracteres")
+    .transform((valor) => valor.toUpperCase())
     .nullable()
     .optional()
     .transform((valor) => (valor && valor.length > 0 ? valor : null)),
@@ -80,7 +82,7 @@ export const presupuestoSchema = z.object({
   observaciones: z
     .string({ message: "Las observaciones deben ser texto" })
     .trim()
-    .transform((valor) => valor.replace(/\s+/g, " "))
+    .transform((valor) => valor.replace(/\s+/g, " ").toUpperCase())
     .refine(
       (valor) => valor.length <= 1000,
       "Las observaciones no pueden exceder 1000 caracteres"

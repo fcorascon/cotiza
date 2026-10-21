@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ReceiptText } from "lucide-react";
+import { Plus, ReceiptText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PresupuestoForm } from "@/components/presupuestos/presupuesto-form";
 import { PresupuestosTable } from "@/components/presupuestos/presupuestos-table";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +26,11 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Presupuesto | null>(null);
+  // El formulario permanece oculto hasta que se presione "Nuevo"
+  // o se edite un registro; al inicio solo se muestra la tabla.
+  const [formVisible, setFormVisible] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+  const enfocarFormulario = useRef(false);
 
   const cargarDatos = useCallback(async () => {
     setLoading(true);
@@ -75,50 +80,77 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
     cargarDatos();
   }, [cargarDatos]);
 
-  function handleEdit(presupuesto: Presupuesto) {
-    setEditing(presupuesto);
-    // En pantallas pequeñas, llevar la vista hacia el formulario de edición.
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+  // Una vez montado el formulario, desplazar la vista hacia él.
+  useEffect(() => {
+    if (formVisible && enfocarFormulario.current) {
+      enfocarFormulario.current = false;
       formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+  }, [formVisible]);
+
+  function abrirFormulario() {
+    enfocarFormulario.current = true;
+    setFormVisible(true);
+  }
+
+  function handleNuevo() {
+    setEditing(null);
+    abrirFormulario();
+  }
+
+  function handleEdit(presupuesto: Presupuesto) {
+    setEditing(presupuesto);
+    abrirFormulario();
   }
 
   function handleSaved() {
     setEditing(null);
+    setFormVisible(false);
     cargarDatos();
   }
 
   function handleCancelEdit() {
     setEditing(null);
+    setFormVisible(false);
   }
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <ReceiptText className="h-5 w-5" aria-hidden="true" />
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <ReceiptText className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Presupuestos</h1>
+            <p className="text-sm text-muted-foreground">
+              Cotizaciones por cliente con productos del catálogo, IVA y
+              totales calculados automáticamente.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Presupuestos</h1>
-          <p className="text-sm text-muted-foreground">
-            Cotizaciones por cliente con productos del catálogo, IVA y totales
-            calculados automáticamente.
-          </p>
-        </div>
+        {!formVisible && (
+          <Button onClick={handleNuevo} className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+            Nuevo presupuesto
+          </Button>
+        )}
       </div>
 
       <div className="space-y-6">
-        <div ref={formRef}>
-          <PresupuestoForm
-            editing={editing}
-            onSaved={handleSaved}
-            onCancelEdit={handleCancelEdit}
-            clientes={clientes}
-            productos={productos}
-            cargandoCatalogos={loading}
-            onIrA={onIrA}
-          />
-        </div>
+        {formVisible && (
+          <div ref={formRef}>
+            <PresupuestoForm
+              editing={editing}
+              onSaved={handleSaved}
+              onCancelEdit={handleCancelEdit}
+              clientes={clientes}
+              productos={productos}
+              cargandoCatalogos={loading}
+              onIrA={onIrA}
+            />
+          </div>
+        )}
 
         <PresupuestosTable
           presupuestos={presupuestos}

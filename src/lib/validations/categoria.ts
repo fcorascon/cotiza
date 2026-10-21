@@ -2,7 +2,8 @@ import { z } from "zod";
 
 /**
  * Esquema de validación para el catálogo de Categorías.
- * El nombre se normaliza (espacios internos colapsados).
+ * El nombre se normaliza (espacios internos colapsados
+ * y convertido a mayúsculas).
  */
 export const categoriaSchema = z.object({
   categoria: z
@@ -10,7 +11,7 @@ export const categoriaSchema = z.object({
     .trim()
     .min(3, "La categoría debe tener al menos 3 caracteres")
     .max(80, "La categoría no puede exceder 80 caracteres")
-    .transform((valor) => valor.replace(/\s+/g, " ")),
+    .transform((valor) => valor.replace(/\s+/g, " ").toUpperCase()),
 });
 
 export type CategoriaInput = z.infer<typeof categoriaSchema>;
