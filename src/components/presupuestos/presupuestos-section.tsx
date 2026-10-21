@@ -7,6 +7,7 @@ import { PresupuestosTable } from "@/components/presupuestos/presupuestos-table"
 import { useToast } from "@/hooks/use-toast";
 import type {
   Cliente,
+  Configuracion,
   Presupuesto,
   ProductoConRelaciones,
   SeccionApp,
@@ -21,6 +22,7 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [productos, setProductos] = useState<ProductoConRelaciones[]>([]);
+  const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Presupuesto | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -28,26 +30,35 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
   const cargarDatos = useCallback(async () => {
     setLoading(true);
     try {
-      const [presupuestosRes, clientesRes, productosRes] = await Promise.all([
-        fetch("/api/presupuestos", { cache: "no-store" }),
-        fetch("/api/clientes", { cache: "no-store" }),
-        fetch("/api/productos", { cache: "no-store" }),
-      ]);
+      const [presupuestosRes, clientesRes, productosRes, configuracionRes] =
+        await Promise.all([
+          fetch("/api/presupuestos", { cache: "no-store" }),
+          fetch("/api/clientes", { cache: "no-store" }),
+          fetch("/api/productos", { cache: "no-store" }),
+          fetch("/api/configuracion", { cache: "no-store" }),
+        ]);
 
-      if (!presupuestosRes.ok || !clientesRes.ok || !productosRes.ok) {
+      if (
+        !presupuestosRes.ok ||
+        !clientesRes.ok ||
+        !productosRes.ok ||
+        !configuracionRes.ok
+      ) {
         throw new Error("respuesta no válida");
       }
 
-      const [presupuestosData, clientesData, productosData] =
+      const [presupuestosData, clientesData, productosData, configuracionData] =
         await Promise.all([
           presupuestosRes.json(),
           clientesRes.json(),
           productosRes.json(),
+          configuracionRes.json(),
         ]);
 
       setPresupuestos(Array.isArray(presupuestosData) ? presupuestosData : []);
       setClientes(Array.isArray(clientesData) ? clientesData : []);
       setProductos(Array.isArray(productosData) ? productosData : []);
+      setConfiguracion(configuracionData ?? null);
     } catch {
       toast({
         variant: "destructive",
@@ -113,6 +124,7 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
           presupuestos={presupuestos}
           loading={loading}
           editing={editing}
+          configuracion={configuracion}
           onEdit={handleEdit}
           onChanged={cargarDatos}
         />

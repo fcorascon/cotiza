@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Eye,
   Loader2,
   Pencil,
+  Printer,
   ReceiptText,
   RefreshCw,
   Search,
   Trash2,
+  X,
 } from "lucide-react";
 import {
   Card,
@@ -58,12 +61,14 @@ import {
   formatearFechaISO,
 } from "@/lib/presupuestos-utils";
 import { formatearMoneda } from "@/lib/productos-utils";
-import type { Presupuesto } from "@/lib/types";
+import { PresupuestoDocumento } from "@/components/presupuestos/presupuesto-documento";
+import type { Configuracion, Presupuesto } from "@/lib/types";
 
 type PresupuestosTableProps = {
   presupuestos: Presupuesto[];
   loading: boolean;
   editing: Presupuesto | null;
+  configuracion: Configuracion | null;
   onEdit: (presupuesto: Presupuesto) => void;
   onChanged: () => void;
 };
@@ -72,6 +77,7 @@ export function PresupuestosTable({
   presupuestos,
   loading,
   editing,
+  configuracion,
   onEdit,
   onChanged,
 }: PresupuestosTableProps) {
@@ -79,7 +85,32 @@ export function PresupuestosTable({
   const [busqueda, setBusqueda] = useState("");
   const [porEliminar, setPorEliminar] = useState<Presupuesto | null>(null);
   const [enVista, setEnVista] = useState<Presupuesto | null>(null);
+  const [paraImprimir, setParaImprimir] = useState<Presupuesto | null>(null);
   const [eliminando, setEliminando] = useState(false);
+
+  /*
+   * Mientras la vista previa de impresión está abierta: bloquea el
+   * scroll de fondo, marca el body para el CSS de impresión, ajusta
+   * el título del documento (nombre del PDF sugerido) y cierra con Esc.
+   */
+  useEffect(() => {
+    if (!paraImprimir) return;
+    const tituloAnterior = document.title;
+    const folio = `PTO-${paraImprimir.id.slice(-6).toUpperCase()}`;
+    document.body.classList.add("imprimiendo");
+    document.body.style.overflow = "hidden";
+    document.title = `Presupuesto ${folio} - ${paraImprimir.cliente.razonSocial}`;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setParaImprimir(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.classList.remove("imprimiendo");
+      document.body.style.overflow = "";
+      document.title = tituloAnterior;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [paraImprimir]);
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -271,6 +302,21 @@ export function PresupuestosTable({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
+                            onClick={() => setParaImprimir(presupuesto)}
+                            aria-label={`Imprimir presupuesto de ${presupuesto.cliente.razonSocial}`}
+                          >
+                            <Printer className="h-4 w-4" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Imprimir / PDF</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => onEdit(presupuesto)}
                             aria-label={`Editar presupuesto de ${presupuesto.cliente.razonSocial}`}
                           >
@@ -321,7 +367,7 @@ export function PresupuestosTable({
                     <TableHead className="w-[12%] whitespace-nowrap px-2 text-right">
                       Total
                     </TableHead>
-                    <TableHead className="w-[110px] text-right">
+                    <TableHead className="w-[148px] text-right">
                       Acciones
                     </TableHead>
                   </TableRow>
@@ -409,6 +455,24 @@ export function PresupuestosTable({
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8"
+                                  onClick={() => setParaImprimir(presupuesto)}
+                                  aria-label={`Imprimir presupuesto de ${presupuesto.cliente.razonSocial}`}
+                                >
+                                  <Printer
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Imprimir / PDF</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
                                   onClick={() => onEdit(presupuesto)}
                                   aria-label={`Editar presupuesto de ${presupuesto.cliente.razonSocial}`}
                                 >
@@ -470,6 +534,19 @@ export function PresupuestosTable({
                   Cliente: {enVista.cliente.razonSocial}
                 </DialogDescription>
               </DialogHeader>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  setEnVista(null);
+                  setParaImprimir(enVista);
+                }}
+              >
+                <Printer className="h-4 w-4" aria-hidden="true" />
+                Imprimir / Guardar PDF
+              </Button>
 
               {enVista.observaciones && (
                 <p className="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
@@ -603,6 +680,38 @@ export function PresupuestosTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Vista previa de impresión del documento formal */}
+      {paraImprimir &&
+        createPortal(
+          <div className="capa-impresion fixed inset-0 z-[70] overflow-y-auto bg-neutral-200/90 p-4 sm:p-8">
+            <div className="barra-impresion sticky top-0 z-10 mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-lg border bg-card p-2 shadow-sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setParaImprimir(null)}
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+                Cerrar
+              </Button>
+              <p className="hidden truncate text-sm text-muted-foreground sm:block">
+                Vista previa · Presupuesto de &quot;
+                {paraImprimir.cliente.razonSocial}&quot;
+              </p>
+              <Button size="sm" onClick={() => window.print()}>
+                <Printer className="h-4 w-4" aria-hidden="true" />
+                Imprimir / Guardar PDF
+              </Button>
+            </div>
+            <div className="hoja-documento mx-auto mt-4 w-full max-w-3xl border bg-white shadow-xl">
+              <PresupuestoDocumento
+                presupuesto={paraImprimir}
+                configuracion={configuracion}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
     </Card>
   );
 }

@@ -120,3 +120,36 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * Impresión del presupuesto (documento formal).
+ * El componente de impresión se monta como portal directo en <body>
+ * con la clase "capa-impresion" y, mientras está abierto, agrega la
+ * clase "imprimiendo" al body. Al imprimir solo se muestra la hoja.
+ */
+@media print {
+  body.imprimiendo > *:not(.capa-impresion) {
+    display: none !important;
+  }
+  .capa-impresion {
+    position: static !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+  }
+  .capa-impresion .barra-impresion {
+    display: none !important;
+  }
+  .capa-impresion .hoja-documento {
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+@page {
+  size: letter;
+  margin: 8mm;
+}

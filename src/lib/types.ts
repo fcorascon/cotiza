@@ -81,10 +81,8 @@ export type Presupuesto = {
   total: number;
   createdAt: string;
   updatedAt: string;
-  cliente: {
-    id: string;
-    razonSocial: string;
-  };
+  /** Cliente con datos completos (para la tabla y el documento impreso). */
+  cliente: Cliente;
   items: PresupuestoItem[];
 };
 

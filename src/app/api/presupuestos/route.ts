@@ -6,7 +6,23 @@ import {
   redondear2,
 } from "@/lib/presupuestos-utils";
 
-const SELECCION_CLIENTE = { id: true, razonSocial: true } as const;
+/**
+ * Datos completos del cliente: necesarios para el documento impreso
+ * (razón social, RFC, dirección, contacto) y para la tabla.
+ */
+const SELECCION_CLIENTE = {
+  id: true,
+  razonSocial: true,
+  rfc: true,
+  calle: true,
+  numero: true,
+  colonia: true,
+  codigoPostal: true,
+  ciudad: true,
+  estado: true,
+  telefono: true,
+  email: true,
+} as const;
 
 const INCLUYIR_PRESUPUESTO = {
   cliente: { select: SELECCION_CLIENTE },

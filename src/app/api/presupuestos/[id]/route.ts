@@ -8,7 +8,20 @@ import {
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-const SELECCION_CLIENTE = { id: true, razonSocial: true } as const;
+/** Datos completos del cliente (necesarios para el documento impreso). */
+const SELECCION_CLIENTE = {
+  id: true,
+  razonSocial: true,
+  rfc: true,
+  calle: true,
+  numero: true,
+  colonia: true,
+  codigoPostal: true,
+  ciudad: true,
+  estado: true,
+  telefono: true,
+  email: true,
+} as const;
 
 const INCLUYIR_PRESUPUESTO = {
   cliente: { select: SELECCION_CLIENTE },

@@ -117,7 +117,7 @@ function NavContent({
 
       <div className="border-t px-5 py-4">
         <p className="text-xs text-muted-foreground">
-          Versión 1.6 · Clientes · Presupuestos · Unidades · Categorías · IVA · Productos · Configuración
+          Versión 1.7 · Clientes · Presupuestos · Unidades · Categorías · IVA · Productos · Configuración
         </p>
       </div>
     </div>
