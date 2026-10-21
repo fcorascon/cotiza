@@ -154,3 +154,20 @@ Stage Summary:
 - Archivos clave: prisma/schema.prisma, src/lib/validations/cliente.ts, src/app/api/clientes/**, src/components/app-shell.tsx, src/components/clientes/**, src/app/page.tsx.
 - 3 clientes de ejemplo quedaron sembrados en la base para demostración.
 - Próximos pasos sugeridos: sección Presupuestos (relación con Cliente), catálogo de conceptos/partidas, exportación PDF.
+
+---
+Task ID: 8
+Agent: main (Z.ai)
+Task: Cambiar el color negro del tema por #191970 (azul medianoche) en toda la aplicación.
+
+Work Log:
+- Identificado el origen del color negro: variables del tema en src/app/globals.css (:root), no hay colores negros fijos en componentes (los bg-black/50 son velos de modales estándar y se conservan).
+- Reemplazos aplicados en :root: --foreground, --card-foreground, --popover-foreground, --primary, --secondary-foreground, --accent-foreground, --sidebar-foreground, --sidebar-primary y --sidebar-accent-foreground ahora usan #191970 literal.
+- --ring y --sidebar-ring actualizados a oklch(0.55 0.13 272.8), tinte medio del mismo tono azul medianoche para anillos de foco visibles.
+- Tema .dark sin cambios (la app solo usa tema claro; layout.tsx no aplica clase dark).
+- Verificación con agent-browser: getComputedStyle del body y del botón primario devuelven rgb(25, 25, 112) = #191970; navegación a secciones Clientes e IVA correcta; sin errores de página.
+- Capturas: download/captura-color-191970-clientes.png y download/captura-color-191970-iva.png. Lint sin errores; servidor healthy (HTTP 200, APIs respondiendo).
+
+Stage Summary:
+- Identidad visual actualizada: negro reemplazado por azul medianoche #191970 en texto, botones primarios, menú lateral activo, títulos e iconos; gris neutro de textos secundarios y bordes se mantiene para legibilidad.
+- Archivo modificado: src/app/globals.css (solo bloque :root).
