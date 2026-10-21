@@ -22,6 +22,8 @@ model Cliente {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  presupuestos Presupuesto[]
+
   @@index([razonSocial])
   @@index([rfc])
 }
@@ -67,8 +69,46 @@ model Producto {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  presupuestoItems PresupuestoItem[]
+
   @@index([descripcion])
   @@index([codigoSat])
+}
+
+model Presupuesto {
+  id            String            @id @default(cuid())
+  clienteId     String
+  cliente       Cliente           @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  fecha         String
+  observaciones String?
+  subtotal      Float
+  iva           Float
+  total         Float
+  items         PresupuestoItem[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([clienteId])
+  @@index([fecha])
+}
+
+model PresupuestoItem {
+  id             String      @id @default(cuid())
+  presupuestoId  String
+  presupuesto    Presupuesto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+  productoId     String?
+  producto       Producto?   @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  descripcion    String
+  codigoSat      String?
+  unidad         String?
+  cantidad       Float
+  precioUnitario Float
+  importe        Float
+  ivaTasa        Float
+  ivaImporte     Float
+  orden          Int
+
+  @@index([presupuestoId])
 }
 
 model Configuracion {

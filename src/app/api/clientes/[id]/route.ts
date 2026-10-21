@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { clienteSchema } from "@/lib/validations/cliente";
 
@@ -81,6 +82,18 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     await db.cliente.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2003"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "No se puede eliminar el cliente porque está siendo utilizado por uno o más presupuestos",
+        },
+        { status: 409 }
+      );
+    }
     console.error("DELETE /api/clientes/[id] error:", error);
     return NextResponse.json(
       { error: "Error al eliminar el cliente" },

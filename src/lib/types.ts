@@ -56,6 +56,56 @@ export type ProductoConRelaciones = Producto & {
   iva: Iva;
 };
 
+export type PresupuestoItem = {
+  id: string;
+  presupuestoId: string;
+  productoId: string | null;
+  descripcion: string;
+  codigoSat: string | null;
+  unidad: string | null;
+  cantidad: number;
+  precioUnitario: number;
+  importe: number;
+  ivaTasa: number;
+  ivaImporte: number;
+  orden: number;
+};
+
+export type Presupuesto = {
+  id: string;
+  clienteId: string;
+  fecha: string;
+  observaciones: string | null;
+  subtotal: number;
+  iva: number;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+  cliente: {
+    id: string;
+    razonSocial: string;
+  };
+  items: PresupuestoItem[];
+};
+
+/** Partida enviada desde el formulario (fotografía del producto + cantidad). */
+export type PresupuestoItemPayload = {
+  productoId: string | null;
+  descripcion: string;
+  codigoSat: string | null;
+  unidad: string | null;
+  cantidad: number;
+  precioUnitario: number;
+  ivaTasa: number;
+};
+
+export type PresupuestoPayload = {
+  clienteId: string;
+  fecha: string;
+  observaciones: string | null;
+  items: PresupuestoItemPayload[];
+};
+
 export type Configuracion = {
   id: string;
   nombreComercial: string;
@@ -81,6 +131,7 @@ export type Configuracion = {
 
 export type SeccionApp =
   | "clientes"
+  | "presupuestos"
   | "unidades"
   | "categorias"
   | "ivas"

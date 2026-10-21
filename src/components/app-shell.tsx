@@ -34,17 +34,17 @@ type NavItem = {
 
 const NAV_ITEMS: (NavItem | { id: null; label: string; icon: React.ComponentType<{ className?: string }>; enabled: false })[] = [
   { id: "clientes", label: "Clientes", icon: Users, enabled: true },
+  {
+    id: "presupuestos",
+    label: "Presupuestos",
+    icon: ReceiptText,
+    enabled: true,
+  },
   { id: "unidades", label: "Unidades", icon: Ruler, enabled: true },
   { id: "categorias", label: "Categorías", icon: Tags, enabled: true },
   { id: "ivas", label: "IVA", icon: Percent, enabled: true },
   { id: "productos", label: "Productos", icon: Package, enabled: true },
   { id: "configuracion", label: "Configuración", icon: Settings, enabled: true },
-  {
-    id: null,
-    label: "Presupuestos",
-    icon: ReceiptText,
-    enabled: false,
-  },
 ];
 
 function NavContent({
@@ -117,7 +117,7 @@ function NavContent({
 
       <div className="border-t px-5 py-4">
         <p className="text-xs text-muted-foreground">
-          Versión 1.5 · Clientes · Unidades · Categorías · IVA · Productos · Configuración
+          Versión 1.6 · Clientes · Presupuestos · Unidades · Categorías · IVA · Productos · Configuración
         </p>
       </div>
     </div>
