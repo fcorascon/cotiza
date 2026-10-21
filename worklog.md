@@ -252,3 +252,22 @@ Stage Summary:
 - Regla global: todo texto capturado se almacena y muestra en MAYÚSCULAS (clientes, unidades, categorías, productos, presupuestos y datos de la empresa); correos/teléfonos excluidos. La Configuración existente no se migró (se convertirá al volver a guardar).
 - UX: las secciones abren en modo consulta (solo grid); el formulario aparece con "Nuevo" o al editar, y se cierra al guardar/cancelar.
 - Archivos: 5 validations/*.ts, 6 formularios, 6 secciones, empresa-card, 2 scripts nuevos (diagnostico + migración idempotente re-ejecutable).
+
+---
+Task ID: 13
+Agent: main (Z.ai)
+Task: Insertar el listado de upload/productos.csv (694 filas) en la tabla Productos.
+
+Work Log:
+- Análisis del CSV con python: 694 filas; idunidad {1:635, 2:27, 3:3, 4:28, 6:1}; iva {0:112, 8:582} (codimpuesto inconsistente en 1 fila, idproducto 347 → se usa la columna iva como autoridad); 12 filas sin familia (NULL/vacía); entidades HTML (&quot; → ", &#39; → ') en 59+ descripciones; sin duplicados del par (referencia, descripción); referencias ≤17 caracteres; precio = costo×(1+margen/100) verificado en todas las filas con costo (solo 1 caso con redondeo de centavo, idproducto 351).
+- Creado scripts/importar-productos.ts (bun+Prisma, patrón importar-clientes.ts): parser RFC-4180 propio, decodificador de entidades HTML, limpieza estándar (espacios colapsados + mayúsculas, igual que las validaciones Zod), modo --dry y re-ejecutable (omite pares codigoSat|descripcion existentes).
+- Mapeo: referencia→codigoSat (sin espacios internos: "51142110 -00550"→"51142110-00550"); idunidad→{1:PZA, 2:CAJA, 3:RESMA, 4:PAQ, 6:KG}; familia→categoría existente por coincidencia sin acentos (PAPELERIA→PAPELERÍA etc.); observaciones→notas; fechaalta→createdAt (T12:00Z, patrón clientes); actualizado→updatedAt.
+- Precio de venta preservado: subtotal = precio del origen; para las 559 filas con costo=0 y precio>0 se derivó costo implícito = redondeo2(precio/(1+margen/100)) — con costo>0 la derivación reproduce el costo original exacto (131/132 idénticas, 1 difiere en derivación pero redondea igual); desviación máxima subtotal-fórmula vs precio: $0.0065. Filas con precio=0 quedan en 0.
+- Ejecución: dry-run OK (15 omitidos solo por catálogos pendientes de crear en dry) → import real: 694/694 importados, 0 omitidos. Se crearon unidad RESMA y categoría SIN CATEGORIA (12 filas). BD: 699 productos (694 + 5 demo previos, no tocados).
+- Verificación BD (sqlite3): entidades decodificadas, SIN CATEGORIA=12, RESMA=3, tasas iva 0/8 (+16 solo de demo), precios exactos (372.125/100.5075/138.19), 499 con notas/200 sin, createdAt conservado.
+- Verificación E2E (agent-browser): Productos "699 productos en total · 699 mostrados"; búsqueda 'CARPETA 1"' encuentra 5 filas con comilla renderizada; sin errores de consola; sin overflow horizontal en 390px; sección Presupuestos carga normal. Capturas: download/productos-importados-escritorio.png, download/productos-importados-movil.png. Lint limpio.
+
+Stage Summary:
+- Catálogo real de 694 productos cargado en la tabla Producto; presupuestos ya pueden usarlo (buscador por descripción/código/categoría funciona con el volumen).
+- Decisión documentada: los productos sin costo en el origen llevan un costo implícito derivado de precio/(1+margen) para que el SUBTOTAL conserve su precio de venta real; si se prefiere costo=0 con precio $0.00, re-ejecutar variando el script.
+- Los 5 productos demo previos y el presupuesto de prueba siguen intactos; se pueden eliminar si se desea limpiar el catálogo.
