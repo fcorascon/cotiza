@@ -107,8 +107,8 @@ export function ProductosSection({ onIrA }: ProductosSectionProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
-        <div ref={formRef} className="xl:col-span-1">
+      <div className="grid grid-cols-1 items-start gap-6 2xl:grid-cols-3">
+        <div ref={formRef} className="2xl:col-span-1">
           <ProductoForm
             editing={editing}
             onSaved={handleSaved}
@@ -121,7 +121,7 @@ export function ProductosSection({ onIrA }: ProductosSectionProps) {
           />
         </div>
 
-        <div className="xl:col-span-2">
+        <div className="2xl:col-span-2">
           <ProductosTable
             productos={productos}
             loading={loading}

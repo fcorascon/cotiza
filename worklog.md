@@ -206,3 +206,26 @@ Stage Summary:
 - Los 23 clientes activos del sistema origen ya están disponibles en la app (seleccionables en Presupuestos), ordenados por fecha de alta.
 - Notas de datos heredados: 6 clientes sin RFC (se muestran con RFC vacío; el formulario lo pedirá al editar), RFC placeholders "XXXXXXXXXXX"/"XXX000000" y RFC incompleto "RALJ701220" se conservaron tal cual; algunos clientes sin teléfono/correo/dirección.
 - Script reutilizable en scripts/importar-clientes.ts para futuras cargas.
+
+---
+Task ID: 11
+Agent: main (Z.ai)
+Task: Revisar y corregir el desbordamiento de textos en las secciones de catálogos.
+
+Work Log:
+- Diagnóstico con agent-browser + eval (scrollWidth vs clientWidth de cada elemento, overflow visible) en anchos 390/768/1024/1280/1440/1536:
+  · Formulario de Productos a 1280–1535px: 19 elementos desbordados — la tarjeta media ~302px pero el form usaba sm:grid-cols-2 y los SELECT (Categoría/Unidad/IVA) no cabían.
+  · Tabla de Productos a 1280px: TH Unidad/Margen y TD IVA/Subtotal derramaban; a 390px la celda Subtotal ($1,950.00) y la línea "Costo:" derramaban.
+  · Tabla de Presupuestos a 1280px: celda Fecha y el texto "+ N productos más" derramaban 4–5px.
+  · Unidades/Categorías/IVA y Clientes: sin desbordes.
+- Correcciones:
+  · productos-section.tsx: acomodo lado-a-lado movido de xl a 2xl (grid-cols-3), para que la tabla de 8 columnas y el formulario de 9 campos solo compartan fila cuando hay ~1536px.
+  · producto-form.tsx: grid de campos sm:grid-cols-2 → 2xl:grid-cols-1 con [&>*]:min-w-0 y col-spans ajustados (2 col apilado, 1 col lado-a-lado).
+  · productos-table.tsx: móvil Descripción 55→48% / Subtotal 35→42% + subtotal text-xs sm:text-sm; escritorio Descripción 22% / Categoría 14%; línea "Costo:" con truncate.
+  · presupuestos-table.tsx: Fecha 10→11% / Cliente 28→27%; "+ N productos más" con truncate.
+- Verificación post-fix: 0 desbordes en las 6 secciones × 6 anchos (390/768/1024/1280/1440/1536); lint limpio; capturas antes/después en download/ (antes-overflow-productos-1280.png, despues-productos-1280.png, despues-productos-390.png).
+
+Stage Summary:
+- Causa raíz: anchos basados en viewport (sm/xl) no correspondían al ancho real de la tarjeta cuando la sección pasa a lado-a-lado; los SELECT/grid items no podían encoger (min-width auto).
+- Productos ahora se apila hasta 2xl; los SELECT usan min-w-0; tablas con anchos recalibrados en móvil y 1280px.
+- Diagnóstico reproducible con el eval de scrollWidth incluido en este registro para futuras revisiones.

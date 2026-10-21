@@ -351,10 +351,10 @@ export function PresupuestosTable({
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
-                    <TableHead className="w-[10%] whitespace-nowrap">
+                    <TableHead className="w-[11%] whitespace-nowrap">
                       Fecha
                     </TableHead>
-                    <TableHead className="w-[28%]">Cliente</TableHead>
+                    <TableHead className="w-[27%]">Cliente</TableHead>
                     <TableHead className="hidden w-[15%] lg:table-cell">
                       Productos
                     </TableHead>
@@ -410,7 +410,7 @@ export function PresupuestosTable({
                             {primerProducto}
                           </span>
                           {restantes > 0 && (
-                            <p className="text-xs text-muted-foreground">
+                            <p className="truncate text-xs text-muted-foreground">
                               + {restantes}{" "}
                               {restantes === 1 ? "producto más" : "productos más"}
                             </p>

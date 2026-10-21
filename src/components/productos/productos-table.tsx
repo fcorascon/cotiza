@@ -209,10 +209,10 @@ export function ProductosTable({
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
-                    <TableHead className="w-[55%] sm:w-[23%]">
+                    <TableHead className="w-[48%] sm:w-[22%]">
                       Descripción
                     </TableHead>
-                    <TableHead className="hidden w-[13%] sm:table-cell">
+                    <TableHead className="hidden w-[14%] sm:table-cell">
                       Categoría
                     </TableHead>
                     <TableHead className="hidden w-[9%] lg:table-cell">
@@ -227,7 +227,7 @@ export function ProductosTable({
                     <TableHead className="hidden w-[10%] whitespace-nowrap px-2 text-right md:table-cell">
                       Margen
                     </TableHead>
-                    <TableHead className="w-[35%] whitespace-nowrap px-2 text-right sm:w-[14%]">
+                    <TableHead className="w-[42%] whitespace-nowrap px-2 text-right sm:w-[14%]">
                       Subtotal
                     </TableHead>
                     <TableHead className="w-[90px] text-right">
@@ -273,7 +273,7 @@ export function ProductosTable({
                           >
                             {producto.codigoSat}
                           </p>
-                          <p className="text-xs tabular-nums text-muted-foreground sm:hidden">
+                          <p className="truncate text-xs tabular-nums text-muted-foreground sm:hidden">
                             Costo: {formatearMoneda(producto.costo)}
                           </p>
                         </TableCell>
@@ -305,7 +305,7 @@ export function ProductosTable({
                           {producto.margen}%
                         </TableCell>
 
-                        <TableCell className="whitespace-nowrap px-2 align-top text-right text-sm font-semibold tabular-nums">
+                        <TableCell className="whitespace-nowrap px-2 align-top text-right text-xs font-semibold tabular-nums sm:text-sm">
                           {formatearMoneda(producto.subtotal)}
                         </TableCell>
 

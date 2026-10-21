@@ -236,14 +236,14 @@ export function ProductoForm({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-1 [&>*]:min-w-0"
             noValidate
           >
             <FormField
               control={form.control}
               name="descripcion"
               render={({ field }) => (
-                <FormItem className="sm:col-span-2">
+                <FormItem className="sm:col-span-2 2xl:col-span-1">
                   <FormLabel>Descripción</FormLabel>
                   <FormControl>
                     <Input
@@ -445,7 +445,7 @@ export function ProductoForm({
             />
 
             <div
-              className="rounded-lg border bg-muted/40 p-4 sm:col-span-2"
+              className="rounded-lg border bg-muted/40 p-4 sm:col-span-2 2xl:col-span-1"
               aria-live="polite"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -475,7 +475,7 @@ export function ProductoForm({
               control={form.control}
               name="notas"
               render={({ field }) => (
-                <FormItem className="sm:col-span-2">
+                <FormItem className="sm:col-span-2 2xl:col-span-1">
                   <FormLabel>Notas</FormLabel>
                   <FormControl>
                     <Textarea
@@ -495,7 +495,7 @@ export function ProductoForm({
               )}
             />
 
-            <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row 2xl:col-span-1">
               <Button type="submit" disabled={submitting} className="sm:flex-1">
                 {submitting ? (
                   <>
