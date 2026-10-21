@@ -5,6 +5,7 @@ import {
   Calculator,
   ClipboardList,
   Menu,
+  Package,
   Percent,
   ReceiptText,
   Ruler,
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
@@ -35,6 +37,7 @@ const NAV_ITEMS: (NavItem | { id: null; label: string; icon: React.ComponentType
   { id: "unidades", label: "Unidades", icon: Ruler, enabled: true },
   { id: "categorias", label: "Categorías", icon: Tags, enabled: true },
   { id: "ivas", label: "IVA", icon: Percent, enabled: true },
+  { id: "productos", label: "Productos", icon: Package, enabled: true },
   { id: "configuracion", label: "Configuración", icon: Settings, enabled: true },
   {
     id: null,
@@ -114,7 +117,7 @@ function NavContent({
 
       <div className="border-t px-5 py-4">
         <p className="text-xs text-muted-foreground">
-          Versión 1.4 · Clientes · Unidades · Categorías · IVA · Configuración
+          Versión 1.5 · Clientes · Unidades · Categorías · IVA · Productos · Configuración
         </p>
       </div>
     </div>
@@ -157,6 +160,9 @@ export function AppShell({ active, onNavigate, children }: AppShellProps) {
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0">
               <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
+              <SheetDescription className="sr-only">
+                Navegación entre las secciones de la aplicación
+              </SheetDescription>
               <NavContent active={active} onSelect={handleSelect} />
             </SheetContent>
           </Sheet>

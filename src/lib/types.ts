@@ -35,6 +35,27 @@ export type Iva = {
   updatedAt: string;
 };
 
+export type Producto = {
+  id: string;
+  codigoSat: string;
+  descripcion: string;
+  unidadId: string;
+  categoriaId: string;
+  ivaId: string;
+  costo: number;
+  margen: number;
+  subtotal: number;
+  notas: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProductoConRelaciones = Producto & {
+  unidad: Unidad;
+  categoria: Categoria;
+  iva: Iva;
+};
+
 export type Configuracion = {
   id: string;
   nombreComercial: string;
@@ -63,4 +84,5 @@ export type SeccionApp =
   | "unidades"
   | "categorias"
   | "ivas"
+  | "productos"
   | "configuracion";

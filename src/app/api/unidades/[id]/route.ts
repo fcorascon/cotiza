@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { unidadSchema } from "@/lib/validations/unidad";
 
@@ -85,6 +86,18 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     await db.unidad.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2003"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "No se puede eliminar la unidad porque está siendo utilizada por uno o más productos",
+        },
+        { status: 409 }
+      );
+    }
     console.error("DELETE /api/unidades/[id] error:", error);
     return NextResponse.json(
       { error: "Error al eliminar la unidad" },

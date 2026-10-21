@@ -1,6 +1,31 @@
 # Worklog
 
 ---
+Task ID: 6
+Agent: main (Z.ai)
+Task: Crear la sección Productos con los campos solicitados: código SAT, descripción, unidad (select), categoría (select), IVA (select), costo, margen de ganancia, subtotal (calculado) y notas.
+
+Work Log:
+- Agregado modelo `Producto` a prisma/schema.prisma con relaciones FK a Unidad, Categoria e Iva (onDelete: Restrict) + back-relations `productos` en los tres catálogos; db:push + db:generate.
+- Creado src/lib/productos-utils.ts: normalizarNumeroTexto (acepta "$", "%", comas de miles y coma decimal), textoANumero, calcularSubtotal (costo × (1 + margen/100), redondeo a 2 decimales), formatearMoneda (MXN es-MX) y formatearPorcentaje.
+- Creado src/lib/validations/producto.ts (zod v4): codigoSat requerido 3–20 (letras/números/punto/guion, auto-mayúsculas), descripción 3–200 colapsando espacios, unidadId/categoriaId/ivaId requeridos, costo ≥0 y ≤99,999,999 (2 decimales), margen 0–999 (2 decimales), notas opcionales ≤500; tipos Producto y ProductoConRelaciones en types.ts; SeccionApp + "productos".
+- API REST: /api/productos (GET con include de relaciones y orden alfabético; POST que valida FKs inexistentes → 400 por campo, calcula subtotal en servidor, notas vacías → null) y /api/productos/[id] (PUT recalcula subtotal, DELETE; 404 si no existe).
+- Refuerzo transversal: DELETE de /api/unidades/[id], /api/categorias/[id] y /api/ivas/[id] ahora capturan Prisma P2003 → 409 con mensaje claro ("está siendo utilizada por uno o más productos"), protegiendo la integridad referencial desde la UI.
+- Componentes: productos/producto-form.tsx (Selects Radix ligados a react-hook-form, costo con "$" prefijo, margen con "%" sufijo, caja de SUBTOTAL calculado en vivo con aria-live, Textarea de notas, avisos con botón "Ir a Unidades/Categorías/IVA" cuando un catálogo está vacío — requiere prop onIrA), productos/productos-table.tsx (búsqueda en descripción/código/categoría/unidad/notas, tabla table-fixed con anchos por breakpoint, línea secundaria de código SAT en mono, indicador de notas con tooltip, montos con tabular-nums y whitespace-nowrap, edición, AlertDialog de borrado, skeleton, estados vacíos) y productos/productos-section.tsx (carga paralela de productos + 3 catálogos con Promise.all, icono Package).
+- app-shell.tsx: ítem "Productos" (icono Package) tras IVA; versión 1.5; page.tsx con cadena condicional para las 6 secciones pasando onIrA={setSeccion} a Productos.
+- Incidente resuelto: tras db:push el servidor viejo seguía vivo (dev.pid apuntaba a proceso muerto; el "nuevo" no pudo tomar el puerto 3000) — matado el árbol de procesos a mano (kill -9) y relanzado con .zscripts/dev.sh, esperando salud dentro de la misma llamada bash.
+- Sembrados 5 productos vía scripts/seed_productos.py adaptándose a los catálogos ACTUALES del usuario (unidades ahora son CAJA/KG/MILLAR/PAQ/PZA): Papel bond carta 75g, Toner HP 85A negro, Silla ergonómica ejecutiva, Servicio de limpieza integral mensual, Café molido de especialidad 1kg.
+- Pruebas API: POST vacío → 400 con fieldErrors en los 7 campos; unidad inexistente → 400 "La unidad seleccionada no existe"; PUT/DELETE inexistente → 404; PUT margen 45→50 recalculó 319→330; formatos tolerantes: costo "$1,234.50" + margen "10 %" → 201 con subtotal 1,357.95; margen límite 999 → subtotal 109.9 (10×10.99); margen 1000 → 400; DELETE unidad PZA en uso → 409 P2003. Corrección aplicada: normalizador ahora elimina "%" (los montos "30%" son válidos, como en IVA). Datos de prueba limpiados y Café molido restaurado a CAFETERÍA.
+- Verificación E2E con agent-browser (1440px y 390px): validación de formulario vacío con errores en campo; alta de "Teclado inalámbrico Logitech" (TECNOLOGÍA/PZA/Tasa 16%) con subtotal en vivo $600.00 ANTES de guardar, toast "Producto registrado" y fila nueva; edición margen 20→30 con recálculo en vivo $650.00 y fila actualizada ($500.00/30%/$650.00); búsqueda "teclado"→1 fila y limpieza con teclado real→6; eliminación con AlertDialog→toast y 5 restantes; navegación cruzada Unidades↔Productos con datos intactos. Correcciones de la verificación: (1) aria-label en inputs Costo/Margen (el div decorativo rompía la asociación de label), (2) tabla: header "Margen" truncado y montos colisionando ("$1,500.0030%") → grid cambiado a xl:grid-cols-3 (tabla 2/3), anchos rebalanceados y whitespace-nowrap, (3) móvil: costo movido a línea bajo la descripción (sm:hidden) para eliminar la colisión con Subtotal, (4) SheetDescription sr-only en el menú móvil para eliminar la advertencia de Radix. Sin overflow horizontal en 390px. Capturas: download/captura-productos-escritorio.png y download/captura-productos-movil.png. Lint sin errores, consola limpia, dev.log limpio.
+
+Stage Summary:
+- Sección Productos funcional y persistente: CRUD completo con relaciones a los 3 catálogos, subtotal calculado automáticamente (costo + margen%) tanto en vivo en el formulario como en el servidor; 5 productos de ejemplo sembrados.
+- Integridad referencial activa: unidades/categorías/tasas de IVA en uso por productos no pueden eliminarse (409 con mensaje claro).
+- Archivos clave: prisma/schema.prisma (Producto + back-relations), src/app/api/productos/**, src/lib/productos-utils.ts, src/lib/validations/producto.ts, src/components/productos/**, src/components/app-shell.tsx, src/app/page.tsx; scripts/seed_productos.py y scripts/repruebas_productos.py reutilizables.
+- El catálogo de productos queda listo para alimentar los conceptos de la sección Presupuestos (categoría, unidad, cantidad, precio/subtotal, IVA y totales).
+- Siguiente paso sugerido: sección Presupuestos (cliente + conceptos tomando productos de este catálogo, con datos de empresa y diseño de la Configuración para el documento impreso).
+
+---
 Task ID: 5
 Agent: main (Z.ai)
 Task: Crear la sección Configuración del Sistema replicando la imagen adjunta: Datos de la Empresa (con logotipo), Servidor de Correo (SMTP) con prueba de conexión, Diseño Presupuesto y Diseño Recibo (color, fila, logotipo), botones Cancelar/Guardar.

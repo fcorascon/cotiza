@@ -27,24 +27,48 @@ model Cliente {
 }
 
 model Unidad {
-  id        String   @id @default(cuid())
-  unidad    String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String     @id @default(cuid())
+  unidad    String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  productos Producto[]
 }
 
 model Categoria {
-  id        String   @id @default(cuid())
-  categoria String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String     @id @default(cuid())
+  categoria String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  productos Producto[]
 }
 
 model Iva {
-  id        String   @id @default(cuid())
-  tasa      Float    @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String     @id @default(cuid())
+  tasa      Float      @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  productos Producto[]
+}
+
+model Producto {
+  id          String    @id @default(cuid())
+  codigoSat   String
+  descripcion String
+  unidadId    String
+  unidad      Unidad    @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  ivaId       String
+  iva         Iva       @relation(fields: [ivaId], references: [id], onDelete: Restrict)
+  costo       Float
+  margen      Float
+  subtotal    Float
+  notas       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([descripcion])
+  @@index([codigoSat])
 }
 
 model Configuracion {
