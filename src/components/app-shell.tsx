@@ -8,6 +8,7 @@ import {
   Percent,
   ReceiptText,
   Ruler,
+  Settings,
   Tags,
   Users,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const NAV_ITEMS: (NavItem | { id: null; label: string; icon: React.ComponentType
   { id: "unidades", label: "Unidades", icon: Ruler, enabled: true },
   { id: "categorias", label: "Categorías", icon: Tags, enabled: true },
   { id: "ivas", label: "IVA", icon: Percent, enabled: true },
+  { id: "configuracion", label: "Configuración", icon: Settings, enabled: true },
   {
     id: null,
     label: "Presupuestos",
@@ -112,7 +114,7 @@ function NavContent({
 
       <div className="border-t px-5 py-4">
         <p className="text-xs text-muted-foreground">
-          Versión 1.3 · Clientes · Unidades · Categorías · IVA
+          Versión 1.4 · Clientes · Unidades · Categorías · IVA · Configuración
         </p>
       </div>
     </div>

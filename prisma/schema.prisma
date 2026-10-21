@@ -46,3 +46,27 @@ model Iva {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Configuracion {
+  id               String   @id @default("principal")
+  nombreComercial  String
+  razonLegal       String
+  rfc              String
+  direccion        String
+  telefono         String
+  email            String
+  logo             String?
+  smtpHost         String   @default("")
+  smtpPuerto       Int      @default(587)
+  smtpCifrado      String   @default("SSL")
+  smtpUsuario      String   @default("")
+  smtpPassword     String   @default("")
+  presupuestoColor String   @default("#1D4ED8")
+  presupuestoFila  String   @default("normal")
+  presupuestoLogo  String?
+  reciboColor      String   @default("#1D4ED8")
+  reciboFila       String   @default("grande")
+  reciboLogo       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}

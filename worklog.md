@@ -1,6 +1,28 @@
 # Worklog
 
 ---
+Task ID: 5
+Agent: main (Z.ai)
+Task: Crear la sección Configuración del Sistema replicando la imagen adjunta: Datos de la Empresa (con logotipo), Servidor de Correo (SMTP) con prueba de conexión, Diseño Presupuesto y Diseño Recibo (color, fila, logotipo), botones Cancelar/Guardar.
+
+Work Log:
+- Instalado nodemailer@10.2.0 (+@types) para la prueba de conexión SMTP real.
+- Agregado modelo `Configuracion` (registro único id "principal": datos de empresa, SMTP con smtpPassword privado, colores/fila/logotipo de presupuesto y recibo) a prisma/schema.prisma; db:push + db:generate.
+- Creado src/lib/configuracion-defaults.ts con los datos de la imagen (Comercializadora Suncatc / del Norte / CSN200210B44 / ALFARAZ 3595 / 686.4333453 / mail.suncatcher.com.mx:465 SSL) y logotipo sol SVG pre-diseñado como data URL.
+- Validación zod (RFC, teléfono, email, puerto 1–65535 como texto, enums SSL/TLS/NINGUNA y normal/grande, logotipos data URL ≤2MB) en src/lib/validations/configuracion.ts; tipos Configuracion y SeccionApp + "configuracion".
+- API: /api/configuracion GET (crea registro con valores iniciales si no existe; nunca expone smtpPassword) y PUT (smtpPassword vacío conserva la almacenada); /api/configuracion/probar-smtp POST (nodemailer verify + envío opcional de correo de prueba a destino, mensajes de error legibles por código: EAUTH, ETIMEDOUT, ENOTFOUND, ECONNREFUSED, certificado).
+- Componentes: configuracion-section.tsx (carga, guardar con mapeo de fieldErrors, cancelar restaurando valores cargados, barra inferior sticky Cancelar/Guardar, skeletons), empresa-card.tsx (RFC auto-mayúsculas), smtp-card.tsx (Select de cifrado, contraseña write-only con pista, panel de prueba con resultado inline verde/rojo y botón "Ver envíos · Próximamente"), diseno-card.tsx reutilizable (input type=color, Select Normal/Grande, logo), logo-upload-field.tsx (FileReader a data URL, valida tipo/1.5MB, preview y quitar).
+- app-shell.tsx: ítem "Configuración" (icono Settings) habilitado; versión 1.4; page.tsx refactorizado a mapa SECCIONES[seccion] para las 5 secciones.
+- Verificación API: GET crea con defaults; PUT guarda y conserva contraseña; RFC inválido → 400 con fieldErrors; probar-smtp con destino inválido → 400; host inexistente → ok:false con mensaje claro.
+- Verificación E2E con agent-browser (1440px y 390px): datos precargados de la imagen, prueba de conexión REAL contra mail.suncatcher.com.mx (verify exitoso; envío rechazado sin contraseña → mensaje honesto), carga de PNG en Logotipo (Presupuesto) persistida como data URL, Guardar/Cancelar verificados (teléfono revertido), cambio de color #DC2626 y fila Grande persistidos, luego restauración al estado original. Capturas: download/captura-configuracion-escritorio.png, captura-configuracion-scroll.png y captura-configuracion-movil.png. Lint sin errores, dev.log limpio, sin errores de consola.
+
+Stage Summary:
+- Sección Configuración funcional y persistente con los datos de la empresa precargados; prueba SMTP real operativa; 5 módulos activos (Clientes, Unidades, Categorías, IVA, Configuración).
+- Archivos clave: prisma/schema.prisma (Configuracion), src/app/api/configuracion/**, src/lib/configuracion-defaults.ts, src/lib/validations/configuracion.ts, src/components/configuracion/**, src/components/app-shell.tsx, src/app/page.tsx.
+- La configuración queda lista para que Presupuestos lea datos de empresa, logotipos, colores e IVA al generar documentos.
+- Siguiente paso sugerido: sección Presupuestos (cliente + conceptos con categoría, unidad, cantidad, precio, IVA y totales).
+
+---
 Task ID: 4
 Agent: main (Z.ai)
 Task: Crear la sección IVA (catálogo de tasas) con las opciones indicadas por el usuario: 0%, 8% y 16%, siguiendo el patrón de Categorías/Unidades.

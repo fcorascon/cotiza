@@ -35,4 +35,32 @@ export type Iva = {
   updatedAt: string;
 };
 
-export type SeccionApp = "clientes" | "unidades" | "categorias" | "ivas";
+export type Configuracion = {
+  id: string;
+  nombreComercial: string;
+  razonLegal: string;
+  rfc: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+  logo: string | null;
+  smtpHost: string;
+  smtpPuerto: number;
+  smtpCifrado: string;
+  smtpUsuario: string;
+  presupuestoColor: string;
+  presupuestoFila: string;
+  presupuestoLogo: string | null;
+  reciboColor: string;
+  reciboFila: string;
+  reciboLogo: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SeccionApp =
+  | "clientes"
+  | "unidades"
+  | "categorias"
+  | "ivas"
+  | "configuracion";

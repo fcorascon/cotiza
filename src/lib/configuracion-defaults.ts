@@ -1,0 +1,32 @@
+/**
+ * Valores iniciales de la Configuración del Sistema.
+ * Se utilizan la primera vez que se consulta la configuración
+ * (la sección es un registro único con id "principal").
+ */
+
+/** Logotipo sol pre-diseñado (SVG) como data URL. */
+function crearLogoSol(): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="11" fill="#F59E0B"/><g stroke="#F59E0B" stroke-width="4" stroke-linecap="round"><line x1="32" y1="6" x2="32" y2="14"/><line x1="32" y1="50" x2="32" y2="58"/><line x1="6" y1="32" x2="14" y2="32"/><line x1="50" y1="32" x2="58" y2="32"/><line x1="13.6" y1="13.6" x2="19.3" y2="19.3"/><line x1="44.7" y1="44.7" x2="50.4" y2="50.4"/><line x1="13.6" y1="50.4" x2="19.3" y2="44.7"/><line x1="44.7" y1="19.3" x2="50.4" y2="13.6"/></g></svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
+export const CONFIGURACION_DEFAULTS = {
+  nombreComercial: "Comercializadora Suncatc",
+  razonLegal: "del Norte",
+  rfc: "CSN200210B44",
+  direccion: "ALFARAZ 3595, RESIDENCIAL SEVILLA 2DA SECCIÓN",
+  telefono: "686.4333453",
+  email: "ventas@suncatcher.com.mx",
+  logo: crearLogoSol(),
+  smtpHost: "mail.suncatcher.com.mx",
+  smtpPuerto: 465,
+  smtpCifrado: "SSL",
+  smtpUsuario: "ventas@suncatcher.com.mx",
+  smtpPassword: "",
+  presupuestoColor: "#1D4ED8",
+  presupuestoFila: "normal",
+  presupuestoLogo: crearLogoSol(),
+  reciboColor: "#1D4ED8",
+  reciboFila: "grande",
+  reciboLogo: crearLogoSol(),
+};
