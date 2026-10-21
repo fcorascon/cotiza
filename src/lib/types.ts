@@ -21,4 +21,11 @@ export type Unidad = {
   updatedAt: string;
 };
 
-export type SeccionApp = "clientes" | "unidades";
+export type Categoria = {
+  id: string;
+  categoria: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SeccionApp = "clientes" | "unidades" | "categorias";

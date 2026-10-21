@@ -7,6 +7,7 @@ import {
   Menu,
   ReceiptText,
   Ruler,
+  Tags,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ type NavItem = {
 const NAV_ITEMS: (NavItem | { id: null; label: string; icon: React.ComponentType<{ className?: string }>; enabled: false })[] = [
   { id: "clientes", label: "Clientes", icon: Users, enabled: true },
   { id: "unidades", label: "Unidades", icon: Ruler, enabled: true },
+  { id: "categorias", label: "Categorías", icon: Tags, enabled: true },
   {
     id: null,
     label: "Presupuestos",
@@ -108,7 +110,7 @@ function NavContent({
 
       <div className="border-t px-5 py-4">
         <p className="text-xs text-muted-foreground">
-          Versión 1.1 · Clientes · Unidades
+          Versión 1.2 · Clientes · Unidades · Categorías
         </p>
       </div>
     </div>

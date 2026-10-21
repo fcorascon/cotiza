@@ -1,6 +1,27 @@
 # Worklog
 
 ---
+Task ID: 3
+Agent: main (Z.ai)
+Task: Crear la sección Categorías con las 12 opciones indicadas por el usuario (catálogo con campo "categoría"), siguiendo el patrón de Unidades.
+
+Work Log:
+- Agregado modelo `Categoria` (campo único `categoria`) a prisma/schema.prisma y sincronizado con db:push.
+- Creado src/lib/validations/categoria.ts (zod: min 3, máx 80, colapsa espacios) y tipo Categoria en types.ts; SeccionApp ahora incluye "categorias".
+- API REST: src/app/api/categorias/route.ts (GET alfabético, POST con rechazo de duplicados insensibles a mayúsculas/espacios → 409) y src/app/api/categorias/[id]/route.ts (PUT y DELETE).
+- Nuevos componentes: categorias/categoria-form.tsx, categorias/categorias-table.tsx (búsqueda en vivo, tabla table-fixed, edición, AlertDialog de borrado, skeleton, estados vacíos) y categorias/categorias-section.tsx.
+- app-shell.tsx: ítem "Categorías" (icono Tags) habilitado; versión 1.2 en el pie del sidebar; page.tsx conmuta las 3 secciones por estado.
+- Reiniciado dev server con flujo oficial (.zscripts/dev.sh + dev.pid) para cargar el cliente Prisma nuevo; servidor estable.
+- Sembradas las 12 categorías solicitadas con ortografía corregida: ARTÍCULOS DE OFICINA, CAFETERÍA, COMIDA, CONSTRUCCIÓN, HIGIENE, LIMPIEZA, MOBILIARIO Y EQUIPO, PAPELERÍA, TINTAS Y TONERS, SALUD, TECNOLOGÍA, REGALOS.
+- Verificación E2E con agent-browser: alta "FERRETERÍA", duplicado "papelería" rechazado con error en campo, renombrado a "FERRETERÍA Y HERRAMIENTAS", eliminación con confirmación (12 restantes), búsqueda por teclado ("tec"→1), navegación entre Clientes/Unidades/Categorías intacta. Capturas: download/captura-categorias-escritorio.png y download/captura-categorias-movil.png. Lint sin errores, sin errores de consola.
+
+Stage Summary:
+- Sección Categorías funcional y persistente con las 12 categorías precargadas; navegación con 3 módulos activos.
+- Archivos clave: prisma/schema.prisma (Categoria), src/app/api/categorias/**, src/lib/validations/categoria.ts, src/components/categorias/**, src/components/app-shell.tsx, src/app/page.tsx.
+- Siguiente paso sugerido: sección Presupuestos (cliente + conceptos con categoría, unidad, cantidad, precio, IVA y totales).
+
+
+---
 Task ID: 2
 Agent: main (Z.ai)
 Task: Crear la sección Unidades (catálogo) con el campo "unidad": formulario + grid, integrada a la navegación lateral junto a Clientes.
