@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { ClientesSection } from "@/components/clientes/clientes-section";
 import { UnidadesSection } from "@/components/unidades/unidades-section";
 import { CategoriasSection } from "@/components/categorias/categorias-section";
+import { IvasSection } from "@/components/ivas/ivas-section";
 import type { SeccionApp } from "@/lib/types";
 
 export default function Page() {
@@ -16,8 +17,10 @@ export default function Page() {
         <ClientesSection />
       ) : seccion === "unidades" ? (
         <UnidadesSection />
-      ) : (
+      ) : seccion === "categorias" ? (
         <CategoriasSection />
+      ) : (
+        <IvasSection />
       )}
     </AppShell>
   );

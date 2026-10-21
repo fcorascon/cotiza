@@ -28,4 +28,11 @@ export type Categoria = {
   updatedAt: string;
 };
 
-export type SeccionApp = "clientes" | "unidades" | "categorias";
+export type Iva = {
+  id: string;
+  tasa: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SeccionApp = "clientes" | "unidades" | "categorias" | "ivas";

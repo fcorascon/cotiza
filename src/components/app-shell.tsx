@@ -5,6 +5,7 @@ import {
   Calculator,
   ClipboardList,
   Menu,
+  Percent,
   ReceiptText,
   Ruler,
   Tags,
@@ -32,6 +33,7 @@ const NAV_ITEMS: (NavItem | { id: null; label: string; icon: React.ComponentType
   { id: "clientes", label: "Clientes", icon: Users, enabled: true },
   { id: "unidades", label: "Unidades", icon: Ruler, enabled: true },
   { id: "categorias", label: "Categorías", icon: Tags, enabled: true },
+  { id: "ivas", label: "IVA", icon: Percent, enabled: true },
   {
     id: null,
     label: "Presupuestos",
@@ -110,7 +112,7 @@ function NavContent({
 
       <div className="border-t px-5 py-4">
         <p className="text-xs text-muted-foreground">
-          Versión 1.2 · Clientes · Unidades · Categorías
+          Versión 1.3 · Clientes · Unidades · Categorías · IVA
         </p>
       </div>
     </div>

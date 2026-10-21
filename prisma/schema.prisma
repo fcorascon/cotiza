@@ -39,3 +39,10 @@ model Categoria {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Iva {
+  id        String   @id @default(cuid())
+  tasa      Float    @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -1,6 +1,27 @@
 # Worklog
 
 ---
+Task ID: 4
+Agent: main (Z.ai)
+Task: Crear la sección IVA (catálogo de tasas) con las opciones indicadas por el usuario: 0%, 8% y 16%, siguiendo el patrón de Categorías/Unidades.
+
+Work Log:
+- Agregado modelo `Iva` (campo numérico único `tasa` Float) a prisma/schema.prisma; db:push + db:generate ejecutados.
+- Creado src/lib/validations/iva.ts (zod v4: acepta "16", "16%", "16 %", coma decimal; valida 0–100 con regex y refinamientos; IvaInput = string para integración limpia con react-hook-form) y tipo Iva en types.ts; SeccionApp ahora incluye "ivas".
+- API REST: src/app/api/ivas/route.ts (GET ordenado por tasa ascendente, POST que convierte a número y rechaza duplicados → 409) y src/app/api/ivas/[id]/route.ts (PUT y DELETE con 404 y 409).
+- Nuevos componentes: ivas/iva-form.tsx (label "Tasa de IVA (%)", inputMode decimal, carga de editing con String(tasa)), ivas/ivas-table.tsx (búsqueda que ignora el símbolo "%", valores con tabular-nums, edición, AlertDialog de borrado, skeleton, estados vacíos) e ivas/ivas-section.tsx (icono Percent, título "IVA").
+- app-shell.tsx: ítem "IVA" (icono Percent) habilitado tras Categorías; versión 1.3 en el pie del sidebar; page.tsx conmuta las 4 secciones por estado.
+- Reinicio del dev server con flujo oficial (.zscripts/dev.sh + dev.pid); nota: el primer intento fue eliminado por el sandbox durante db:push — relanzar y esperar dentro de la misma llamada bash resolvió el problema.
+- Sembradas las 3 tasas vía API: 0, 8 y 16.
+- Pruebas API: duplicado "16 %" → 409 (el transform elimina espacio y %); "150" → 400 fuera de rango; "abc" → 400 formato; ciclo temporal 10 → PUT 10.5 → DELETE correctos; lista final 0/8/16.
+- Verificación E2E con agent-browser (1440px y 390px): sección IVA con 3 filas ordenadas, duplicado rechazado con error en campo, alta "4" → renombrado a "10.5" → eliminación con confirmación (3 restantes), búsqueda "16%" → 1 fila y limpieza con teclado real → 4 filas, navegación cruzada Clientes ↔ IVA con datos intactos. Capturas: download/captura-iva-escritorio.png y download/captura-iva-movil.png. Lint sin errores, dev.log limpio, sin errores de consola.
+
+Stage Summary:
+- Sección IVA funcional y persistente con las tasas 0%, 8% y 16% precargadas; tasa almacenada como Float para cálculos futuros en Presupuestos; 4 módulos activos en la navegación.
+- Archivos clave: prisma/schema.prisma (Iva), src/app/api/ivas/**, src/lib/validations/iva.ts, src/components/ivas/**, src/components/app-shell.tsx, src/app/page.tsx.
+- Siguiente paso sugerido: sección Presupuestos (cliente + conceptos con categoría, unidad, cantidad, precio, IVA y totales).
+
+---
 Task ID: 3
 Agent: main (Z.ai)
 Task: Crear la sección Categorías con las 12 opciones indicadas por el usuario (catálogo con campo "categoría"), siguiendo el patrón de Unidades.
