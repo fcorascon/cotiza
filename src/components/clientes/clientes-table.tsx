@@ -61,7 +61,14 @@ type ClientesTableProps = {
 };
 
 function formatearDireccion(c: Cliente) {
-  return `${c.calle} ${c.numero}, ${c.colonia}, C.P. ${c.codigoPostal}, ${c.ciudad}, ${c.estado}`;
+  const partes = [
+    `${c.calle} ${c.numero}`.trim(),
+    c.colonia,
+    c.codigoPostal ? `C.P. ${c.codigoPostal}` : "",
+    c.ciudad,
+    c.estado,
+  ].filter(Boolean);
+  return partes.join(", ");
 }
 
 export function ClientesTable({

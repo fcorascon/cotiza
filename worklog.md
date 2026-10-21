@@ -189,3 +189,20 @@ Stage Summary:
 - Los presupuestos ya se imprimen como documento formal: vista previa en pantalla + "Imprimir / Guardar PDF" desde el ícono de la tabla, la tarjeta móvil o el detalle; el PDF respetan el diseño de la sección Configuración (color, tamaño de fila, logotipo) y los datos de la empresa.
 - Archivos clave: src/components/presupuestos/presupuesto-documento.tsx (nuevo), src/components/presupuestos/presupuestos-table.tsx, src/components/presupuestos/presupuestos-section.tsx, src/app/globals.css (@media print + @page), src/app/api/presupuestos/route.ts + [id]/route.ts (cliente completo), src/lib/types.ts, src/components/app-shell.tsx (v1.7).
 - Siguiente paso sugerido: enviar el presupuesto por correo con el SMTP ya configurado (nodemailer), o sección Recibos/Cobros usando reciboColor/reciboFila/reciboLogo.
+
+---
+Task ID: 10
+Agent: main (Z.ai)
+Task: Importar los clientes del archivo upload/clientes.csv a la BD de la aplicación.
+
+Work Log:
+- Analizado upload/clientes.csv (25 filas, campos entrecomillados, dirección en texto libre: direccion/ciudad/codpostal/provincia) contra el modelo Cliente actual (dirección estructurada: calle/numero/colonia/codigoPostal/ciudad/estado).
+- Mejorado formatearDireccion() en src/components/clientes/clientes-table.tsx: ahora omite partes vacías para no renderizar ", ," en registros con dirección incompleta (mismo resultado para registros completos). Lint limpio.
+- Creado scripts/importar-clientes.ts (bun + Prisma): parser CSV RFC-4180, mapeo manual fila por fila de la dirección libre a campos estructurados (interiores como "LOCAL 1"/"PISO 8, INTERIOR 101" se conservan junto al número; "MATAMOROS, TAMAULIPAS" → ciudad/estado; estados normalizados: B.C./MEXICALI→BAJA CALIFORNIA, CDMX→CIUDAD DE MÉXICO), razonSocial = nombre si personafisica=1, si no razonsocial||nombre; omite filas con debaja=1; conserva la fecha de alta original como createdAt; detecta RFC duplicados contra la BD.
+- Ejecutada la importación: 23 clientes insertados, 2 omitidos por debaja=1 (PODER LEGISLATIVO codcliente 1, duplicado del activo; TEST CLIENTE EDITADO codcliente 23), total 26 en BD.
+- Verificación: API /api/clientes devuelve 26 con datos correctos; navegador confirma "26 clientes en total · 26 mostrados", búsqueda funcional (filtro "PARQUE") y captura guardada en download/clientes-importados.png.
+
+Stage Summary:
+- Los 23 clientes activos del sistema origen ya están disponibles en la app (seleccionables en Presupuestos), ordenados por fecha de alta.
+- Notas de datos heredados: 6 clientes sin RFC (se muestran con RFC vacío; el formulario lo pedirá al editar), RFC placeholders "XXXXXXXXXXX"/"XXX000000" y RFC incompleto "RALJ701220" se conservaron tal cual; algunos clientes sin teléfono/correo/dirección.
+- Script reutilizable en scripts/importar-clientes.ts para futuras cargas.
