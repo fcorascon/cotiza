@@ -25,3 +25,10 @@ model Cliente {
   @@index([razonSocial])
   @@index([rfc])
 }
+
+model Unidad {
+  id        String   @id @default(cuid())
+  unidad    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

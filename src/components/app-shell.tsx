@@ -1,38 +1,50 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   Calculator,
   ClipboardList,
   Menu,
   ReceiptText,
+  Ruler,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import type { SeccionApp } from "@/lib/types";
 
-const NAV_ITEMS = [
+type NavItem = {
+  id: SeccionApp;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  enabled: boolean;
+};
+
+const NAV_ITEMS: (NavItem | { id: null; label: string; icon: React.ComponentType<{ className?: string }>; enabled: false })[] = [
+  { id: "clientes", label: "Clientes", icon: Users, enabled: true },
+  { id: "unidades", label: "Unidades", icon: Ruler, enabled: true },
   {
-    label: "Clientes",
-    href: "/",
-    icon: Users,
-    enabled: true,
-  },
-  {
+    id: null,
     label: "Presupuestos",
-    href: "/presupuestos",
     icon: ReceiptText,
     enabled: false,
   },
 ];
 
-function NavContent({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname();
-
+function NavContent({
+  active,
+  onSelect,
+}: {
+  active: SeccionApp;
+  onSelect: (seccion: SeccionApp) => void;
+}) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 px-5 py-5">
@@ -47,64 +59,81 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3" aria-label="Navegación principal">
+      <nav
+        className="flex-1 space-y-1 px-3"
+        aria-label="Navegación principal"
+      >
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
-          const active = pathname === item.href;
 
-          if (!item.enabled) {
+          if (!item.enabled || item.id === null) {
             return (
               <span
-                key={item.href}
+                key={item.label}
                 className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground/70"
                 aria-disabled="true"
               >
                 <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="flex-1 truncate">{item.label}</span>
-                <Badge variant="secondary" className="text-[10px] font-normal">
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] font-normal"
+                >
                   Próximamente
                 </Badge>
               </span>
             );
           }
 
+          const isActive = active === item.id;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              aria-current={active ? "page" : undefined}
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onSelect(item.id as SeccionApp)}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                active
+                "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
+                isActive
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span className="truncate">{item.label}</span>
-            </Link>
+            </button>
           );
         })}
       </nav>
 
       <div className="border-t px-5 py-4">
         <p className="text-xs text-muted-foreground">
-          Versión 1.0 · Módulo Clientes
+          Versión 1.1 · Clientes · Unidades
         </p>
       </div>
     </div>
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+type AppShellProps = {
+  active: SeccionApp;
+  onNavigate: (seccion: SeccionApp) => void;
+  children: React.ReactNode;
+};
+
+export function AppShell({ active, onNavigate, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  function handleSelect(seccion: SeccionApp) {
+    onNavigate(seccion);
+    setMobileOpen(false);
+  }
 
   return (
     <div className="flex min-h-screen bg-muted/40">
       {/* Barra lateral (escritorio) */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-sidebar text-sidebar-foreground lg:block">
-        <NavContent />
+        <NavContent active={active} onSelect={handleSelect} />
       </aside>
 
       <div className="flex min-h-screen w-full flex-col lg:pl-64">
@@ -122,19 +151,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0">
               <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
-              <NavContent onNavigate={() => setMobileOpen(false)} />
+              <NavContent active={active} onSelect={handleSelect} />
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" />
-            <span className="text-sm font-semibold">Admin de Presupuestos</span>
+            <ClipboardList
+              className="h-5 w-5 text-primary"
+              aria-hidden="true"
+            />
+            <span className="text-sm font-semibold">
+              Admin de Presupuestos
+            </span>
           </div>
         </header>
 
         <main className="flex-1">{children}</main>
 
         <footer className="mt-auto border-t bg-background py-3 text-center text-xs text-muted-foreground">
-          Administrador de Presupuestos · Sección Clientes
+          Administrador de Presupuestos
         </footer>
       </div>
     </div>

@@ -13,3 +13,12 @@ export type Cliente = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Unidad = {
+  id: string;
+  unidad: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SeccionApp = "clientes" | "unidades";
