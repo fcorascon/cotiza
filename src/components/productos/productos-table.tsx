@@ -205,7 +205,10 @@ export function ProductosTable({
           </div>
         ) : (
           <TooltipProvider delayDuration={200}>
-            <ScrollArea className="max-h-[560px] pr-3">
+            {/* overflow-x-visible en el contenedor de la tabla: evita que sea un
+                scroll context y permite que el thead sticky se ancle al viewport
+                del ScrollArea (la tabla es table-fixed y nunca desborda en X). */}
+            <ScrollArea className="max-h-[560px] pr-3 [&_[data-slot=table-container]]:overflow-x-visible">
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>

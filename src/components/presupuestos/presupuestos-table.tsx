@@ -367,7 +367,7 @@ export function PresupuestosTable({
             </div>
 
             {/* Tabla (tableta / escritorio) */}
-            <ScrollArea className="hidden max-h-[560px] pr-3 sm:block">
+            <ScrollArea className="hidden max-h-[560px] pr-3 sm:block [&_[data-slot=table-container]]:overflow-x-visible">
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>

@@ -200,7 +200,7 @@ export function CategoriasTable({
           </div>
         ) : (
           <TooltipProvider delayDuration={200}>
-            <ScrollArea className="max-h-[560px] pr-3">
+            <ScrollArea className="max-h-[560px] pr-3 [&_[data-slot=table-container]]:overflow-x-visible">
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>

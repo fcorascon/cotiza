@@ -313,3 +313,27 @@ Stage Summary:
 - La Configuración ahora gobierna la identidad de TODA la aplicación: el color primario tiñe menús, botones, títulos y acentos al instante al guardar (variables CSS del tema, contraste automático del texto), y el "Logotipo Principal" aparece en el menú lateral, el header móvil y el favicon.
 - Envío de correos activo: los presupuestos se envían por correo al cliente con plantilla HTML personalizada (logo, color y datos de la empresa), usando el SMTP configurado; cada intento queda en la bitácora "Ver envíos" con estado y detalle de error. Falta solo capturar la contraseña SMTP real para enviar en producción.
 - La contraseña SMTP nunca sale de la BD (GET la omite; el form la conserva si se deja vacía).
+
+---
+Task ID: 16
+Agent: main (Z.ai)
+Task: Corregir el desborde de las filas fuera de la tarjeta en TODAS las grids (reportado con captura en Productos).
+
+Work Log:
+- Causa raíz (2 defectos combinados en el ScrollArea de shadcn/Radix):
+  1) ui/scroll-area.tsx: el Root solo tenía "relative" (sin overflow-hidden) y el Viewport "size-full" (height:100%). Con max-h-[560px] SOLO en el Root, height:100% no se resuelve contra un padre limitado únicamente por max-height → el viewport crecía hasta la altura del contenido (37,087px con 699 productos) y se salía de la tarjeta por debajo, tapando el footer. Reproducido y medido con agent-browser antes del fix.
+  2) ui/table.tsx: su contenedor "overflow-x-auto" es un scroll context en ambos ejes (visible+auto → auto) → el thead "sticky top-0" se anclaba a él y NUNCA quedó fijo respecto al viewport del ScrollArea (bug cosmético preexistente, quedaba oculto por el desborde).
+- Fix global (2 líneas en ui/scroll-area.tsx): Root +overflow-hidden (recorte de seguridad) y Viewport +max-h-[inherit] (hereda el max-height del Root; con none no tiene efecto). Un solo cambio corrige los 7 usos de ScrollArea (6 grids + bitácora SMTP max-h-[60vh]).
+- Fix sticky en las 6 grids: se agregó a cada ScrollArea "[&_[data-slot=table-container]]:overflow-x-visible" (productos, clientes, unidades, categorías, ivas, presupuestos-table). Las tablas son table-fixed con anchos % y truncate (sin desborde X verificado en 390px), por lo que el overflow-x-auto del contenedor era redundante ahí; NO se tocó ui/table.tsx (los otros 2 usos de Table — dialog de detalle y form de presupuestos — conservan su red de seguridad; el form ya envuelve su tabla en su propio overflow-x-auto).
+- Verificación E2E (agent-browser, viewport 1440×900):
+  · Productos (699 filas): root 560px, viewport 560/37087 scrollable, rootBottom 811 ≤ cardBottom 836 (contenido dentro de la tarjeta); wheel + programmatic scroll OK; thead position sticky y headerTop==viewportTop con scrollTop=1000 (header fijo funcionando por primera vez).
+  · Clientes (1398px, scrollable), Categorías (729px, scrollable), Unidades (358px, encoge a contenido), IVA (199px), Presupuestos (146px): todos rootBottom ≤ cardBottom, contenedor overflow-x visible, thead sticky.
+  · Móvil 390px Productos: root 560/48271, contenido dentro de la tarjeta (rootRight 349 < cardRight 374), sin overflow horizontal de página; header sticky visible.
+  · Dialog "Ver envíos": bitácora vacía (muestra estado vacío; el ScrollArea con items usa el mismo componente ya corregido).
+- Sin errores de consola ni de página; bun run lint limpio.
+- Capturas: download/grids-productos-corregido-escritorio.png (tabla contenida + footer visible + header fijo), download/grids-productos-corregido-movil.png.
+
+Stage Summary:
+- El desborde está corregido en TODAS las grids: la tabla siempre vive dentro de su tarjeta con scroll interno (máx 560px) y el footer nunca queda tapado; cuando el contenido es corto, la tarjeta encoge naturalmente (max-h actúa solo como tope).
+- Los encabezados de tabla ahora sí quedan fijos al hacer scroll dentro de la grid (sticky funcionando por primera vez, útil con el catálogo de 699 productos).
+- La corrección vive en ui/scroll-area.tsx (global) más 6 clases de una línea; cualquier ScrollArea futuro con max-h-* funcionará correctamente sin ajustes extra.
