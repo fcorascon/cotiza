@@ -271,3 +271,22 @@ Stage Summary:
 - Catálogo real de 694 productos cargado en la tabla Producto; presupuestos ya pueden usarlo (buscador por descripción/código/categoría funciona con el volumen).
 - Decisión documentada: los productos sin costo en el origen llevan un costo implícito derivado de precio/(1+margen) para que el SUBTOTAL conserve su precio de venta real; si se prefiere costo=0 con precio $0.00, re-ejecutar variando el script.
 - Los 5 productos demo previos y el presupuesto de prueba siguen intactos; se pueden eliminar si se desea limpiar el catálogo.
+
+---
+Task ID: 14
+Agent: main (Z.ai)
+Task: 1) Toasts al centro-centro con fondo #F4711E y texto blanco en bold. 2) Todos los modales a fullwidth.
+
+Work Log:
+- Toasts (src/components/ui/toast.tsx, sistema shadcn montado en layout.tsx):
+  · ToastViewport: de esquina inferior-derecha a overlay fijo inset-0 con flex items-center justify-center p-4 y pointer-events-none (el toasts individual mantiene pointer-events-auto; verificado con elementFromPoint: el clic fuera del toast llega a la página — desaparece el viejo problema de "toast bloquea clics").
+  · Variantes default y destructive unificadas: border-transparent bg-[#F4711E] font-bold text-white. ToastTitle/ToastDescription font-bold text-white; ToastClose blanco (white/80→hover white); ToastAction con borde blanco/50.
+  · Ancho del toast limitado a max-w-[min(92vw,520px)] para que centrado no ocupe todo el ancho en escritorio.
+- Modales fullwidth: base DialogContent (ui/dialog.tsx) y AlertDialogContent (ui/alert-dialog.tsx): sm:max-w-lg → sm:max-w-[calc(100%-2rem)] (primera prueba con sm:max-w-none quedó pegado a los bordes, sin esquinas visibles; se dejó margen de 1rem por lado). presupuestos-table.tsx: quitado sm:max-w-lg del Dialog de detalle que lo sobreescribía.
+- Verificación (agent-browser): toast en 1440×900 se asienta exactamente en y=450/900, x=720/1440 (centro-centro; las lecturas iniciales 461–498 eran la animación de entrada, estabiliza a los 200ms); bg rgb(244,113,30)=#F4711E, color blanco, peso 700. Móvil 390: w=358, centro exacto, sin overflow. AlertDialog de borrado: 1408px en viewport 1440 (gutters 16px); Dialog de detalle de presupuesto: 1408px igual. Sin errores de consola; lint limpio.
+- Capturas: download/toast-centro-naranja-escritorio.png, download/toast-centro-naranja-movil.png, download/modal-fullwidth-alertdialog.png, download/modal-fullwidth-presupuesto.png.
+- Nota de depuración: el [role=region] de Radix es un div WRAPPER externo (pointerEvents heredado), no el <ol>; el ol real es el ToastViewport con nuestras clases. Duración Radix por defecto 5s. Las referencias de agent-browser quedan obsoletas tras re-renders; usar snapshot fresco antes de click.
+
+Stage Summary:
+- Todos los avisos (guardado, errores, eliminaciones) se muestran ahora al centro exacto de la pantalla en naranja #F4711E con texto blanco en negrita, en escritorio y móvil.
+- Los 6 diálogos de confirmación de borrado y el visor de presupuesto ocupan todo el ancho (viewport −2rem).
