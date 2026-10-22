@@ -117,6 +117,10 @@ export function EmpresaCard({ form }: EmpresaCardProps) {
                       disabled={form.formState.isSubmitting}
                     />
                   </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Se muestra en el menú de la aplicación, el encabezado móvil
+                    y como favicon.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

@@ -82,6 +82,7 @@ export async function PUT(request: NextRequest) {
       reciboColor: datos.reciboColor,
       reciboFila: datos.reciboFila,
       reciboLogo: datos.reciboLogo ?? null,
+      colorPrimario: datos.colorPrimario,
     };
 
     const config = await db.configuracion.update({

@@ -123,8 +123,24 @@ export type Configuracion = {
   reciboColor: string;
   reciboFila: string;
   reciboLogo: string | null;
+  colorPrimario: string;
   createdAt: string;
   updatedAt: string;
+};
+
+/** Registro de la bitácora de correos enviados. */
+export type EnvioCorreo = {
+  id: string;
+  presupuestoId: string | null;
+  presupuesto: {
+    cliente: { razonSocial: string };
+  } | null;
+  destino: string;
+  asunto: string;
+  estado: string;
+  error: string | null;
+  messageId: string | null;
+  createdAt: string;
 };
 
 export type SeccionApp =

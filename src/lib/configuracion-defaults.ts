@@ -29,4 +29,5 @@ export const CONFIGURACION_DEFAULTS = {
   reciboColor: "#1D4ED8",
   reciboFila: "grande",
   reciboLogo: crearLogoSol(),
+  colorPrimario: "#191970",
 };

@@ -23,6 +23,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import {
+  useConfiguracionAplicacion,
+} from "@/components/configuracion-aplicacion";
 import type { SeccionApp } from "@/lib/types";
 
 type NavItem = {
@@ -54,15 +57,27 @@ function NavContent({
   active: SeccionApp;
   onSelect: (seccion: SeccionApp) => void;
 }) {
+  const { configuracion } = useConfiguracionAplicacion();
+  const nombreEmpresa = configuracion?.nombreComercial || "Admin de Presupuestos";
+  const logotipo = configuracion?.logo ?? null;
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 px-5 py-5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Calculator className="h-5 w-5" aria-hidden="true" />
-        </div>
+        {logotipo ? (
+          <img
+            src={logotipo}
+            alt={`Logotipo de ${nombreEmpresa}`}
+            className="h-10 w-10 shrink-0 object-contain"
+          />
+        ) : (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Calculator className="h-5 w-5" aria-hidden="true" />
+          </div>
+        )}
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold leading-tight">
-            Admin de Presupuestos
+          <p className="truncate text-sm font-semibold leading-tight" title={nombreEmpresa}>
+            {nombreEmpresa}
           </p>
           <p className="text-xs text-muted-foreground">Gestión comercial</p>
         </div>
@@ -132,6 +147,9 @@ type AppShellProps = {
 
 export function AppShell({ active, onNavigate, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { configuracion } = useConfiguracionAplicacion();
+  const nombreEmpresa = configuracion?.nombreComercial || "Admin de Presupuestos";
+  const logotipo = configuracion?.logo ?? null;
 
   function handleSelect(seccion: SeccionApp) {
     onNavigate(seccion);
@@ -166,13 +184,21 @@ export function AppShell({ active, onNavigate, children }: AppShellProps) {
               <NavContent active={active} onSelect={handleSelect} />
             </SheetContent>
           </Sheet>
-          <div className="flex items-center gap-2">
-            <ClipboardList
-              className="h-5 w-5 text-primary"
-              aria-hidden="true"
-            />
-            <span className="text-sm font-semibold">
-              Admin de Presupuestos
+          <div className="flex min-w-0 items-center gap-2">
+            {logotipo ? (
+              <img
+                src={logotipo}
+                alt={`Logotipo de ${nombreEmpresa}`}
+                className="h-7 w-7 shrink-0 object-contain"
+              />
+            ) : (
+              <ClipboardList
+                className="h-5 w-5 shrink-0 text-primary"
+                aria-hidden="true"
+              />
+            )}
+            <span className="truncate text-sm font-semibold">
+              {nombreEmpresa}
             </span>
           </div>
         </header>

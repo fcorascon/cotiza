@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, Mail, Send, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  CheckCircle2,
+  Loader2,
+  Mail,
+  Send,
+  XCircle,
+  Zap,
+} from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 import {
   Card,
@@ -9,6 +16,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -20,6 +34,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -29,6 +45,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { ConfiguracionInput } from "@/lib/validations/configuracion";
+import type { EnvioCorreo } from "@/lib/types";
 
 type SmtpCardProps = {
   form: UseFormReturn<ConfiguracionInput>;
@@ -50,6 +67,28 @@ export function SmtpCard({ form }: SmtpCardProps) {
   const [destino, setDestino] = useState("");
   const [probando, setProbando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoPrueba | null>(null);
+  const [enviosAbiertos, setEnviosAbiertos] = useState(false);
+  const [envios, setEnvios] = useState<EnvioCorreo[]>([]);
+  const [cargandoEnvios, setCargandoEnvios] = useState(false);
+
+  async function cargarEnvios() {
+    setCargandoEnvios(true);
+    try {
+      const response = await fetch("/api/configuracion/envios", {
+        cache: "no-store",
+      });
+      if (!response.ok) throw new Error();
+      setEnvios(await response.json());
+    } catch {
+      setEnvios([]);
+    } finally {
+      setCargandoEnvios(false);
+    }
+  }
+
+  useEffect(() => {
+    if (enviosAbiertos) cargarEnvios();
+  }, [enviosAbiertos]);
 
   async function probarConexion() {
     setProbando(true);
@@ -106,16 +145,14 @@ export function SmtpCard({ form }: SmtpCardProps) {
             <Mail className="h-4 w-4 text-primary" aria-hidden="true" />
             Servidor de correo (SMTP)
           </CardTitle>
-          <span
-            className="flex cursor-not-allowed items-center gap-1.5 text-xs text-muted-foreground/70"
-            aria-disabled="true"
+          <button
+            type="button"
+            onClick={() => setEnviosAbiertos(true)}
+            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
           >
             <Send className="h-3.5 w-3.5" aria-hidden="true" />
             Ver envíos
-            <Badge variant="secondary" className="text-[10px] font-normal">
-              Próximamente
-            </Badge>
-          </span>
+          </button>
         </div>
       </CardHeader>
 
@@ -292,6 +329,96 @@ export function SmtpCard({ form }: SmtpCardProps) {
           </div>
         </Form>
       </CardContent>
+
+      <Dialog open={enviosAbiertos} onOpenChange={setEnviosAbiertos}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Envíos de correo</DialogTitle>
+            <DialogDescription>
+              Últimos correos enviados desde la aplicación (bitácora de los
+              últimos 50 envíos).
+            </DialogDescription>
+          </DialogHeader>
+
+          {cargandoEnvios ? (
+            <div className="space-y-2 py-2" aria-busy="true">
+              {Array.from({ length: 3 }).map((_, indice) => (
+                <Skeleton key={indice} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : envios.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center">
+              <Mail
+                className="h-8 w-8 text-muted-foreground/50"
+                aria-hidden="true"
+              />
+              <p className="font-medium">Aún no hay envíos registrados</p>
+              <p className="max-w-xs text-sm text-muted-foreground">
+                Los correos de presupuestos aparecerán aquí, con su estado de
+                envío.
+              </p>
+            </div>
+          ) : (
+            <ScrollArea className="max-h-[60vh] pr-3">
+              <ul className="space-y-2">
+                {envios.map((envio) => {
+                  const exitoso = envio.estado === "ENVIADO";
+                  return (
+                    <li
+                      key={envio.id}
+                      className="rounded-lg border p-3 text-sm"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          {exitoso ? (
+                            <CheckCircle2
+                              className="h-4 w-4 text-emerald-600"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <XCircle
+                              className="h-4 w-4 text-destructive"
+                              aria-hidden="true"
+                            />
+                          )}
+                          {envio.presupuesto?.cliente.razonSocial ??
+                            "Presupuesto eliminado"}
+                        </span>
+                        <Badge
+                          variant={exitoso ? "secondary" : "destructive"}
+                          className={cn(
+                            "text-[10px]",
+                            exitoso &&
+                              "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
+                          )}
+                        >
+                          {exitoso ? "ENVIADO" : "ERROR"}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 truncate text-xs text-muted-foreground">
+                        {envio.asunto}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Para: <span className="font-mono">{envio.destino}</span>{" "}
+                        ·{" "}
+                        {new Date(envio.createdAt).toLocaleString("es-MX", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
+                      </p>
+                      {envio.error && (
+                        <p className="mt-1 text-xs text-destructive">
+                          {envio.error}
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

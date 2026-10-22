@@ -1,0 +1,718 @@
+     1→"use client";
+     2→
+     3→import { useEffect, useMemo, useState } from "react";
+     4→import { createPortal } from "react-dom";
+     5→import {
+     6→  Eye,
+     7→  Loader2,
+     8→  Pencil,
+     9→  Printer,
+    10→  ReceiptText,
+    11→  RefreshCw,
+    12→  Search,
+    13→  Trash2,
+    14→  X,
+    15→} from "lucide-react";
+    16→import {
+    17→  Card,
+    18→  CardContent,
+    19→  CardDescription,
+    20→  CardHeader,
+    21→  CardTitle,
+    22→} from "@/components/ui/card";
+    23→import { Input } from "@/components/ui/input";
+    24→import { Button } from "@/components/ui/button";
+    25→import { Skeleton } from "@/components/ui/skeleton";
+    26→import {
+    27→  Table,
+    28→  TableBody,
+    29→  TableCell,
+    30→  TableHead,
+    31→  TableHeader,
+    32→  TableRow,
+    33→} from "@/components/ui/table";
+    34→import {
+    35→  AlertDialog,
+    36→  AlertDialogAction,
+    37→  AlertDialogCancel,
+    38→  AlertDialogContent,
+    39→  AlertDialogDescription,
+    40→  AlertDialogFooter,
+    41→  AlertDialogHeader,
+    42→  AlertDialogTitle,
+    43→} from "@/components/ui/alert-dialog";
+    44→import {
+    45→  Dialog,
+    46→  DialogContent,
+    47→  DialogDescription,
+    48→  DialogHeader,
+    49→  DialogTitle,
+    50→} from "@/components/ui/dialog";
+    51→import { Separator } from "@/components/ui/separator";
+    52→import {
+    53→  Tooltip,
+    54→  TooltipContent,
+    55→  TooltipProvider,
+    56→  TooltipTrigger,
+    57→} from "@/components/ui/tooltip";
+    58→import { ScrollArea } from "@/components/ui/scroll-area";
+    59→import { useToast } from "@/hooks/use-toast";
+    60→import {
+    61→  formatearFechaISO,
+    62→} from "@/lib/presupuestos-utils";
+    63→import { formatearMoneda } from "@/lib/productos-utils";
+    64→import { PresupuestoDocumento } from "@/components/presupuestos/presupuesto-documento";
+    65→import type { Configuracion, Presupuesto } from "@/lib/types";
+    66→
+    67→type PresupuestosTableProps = {
+    68→  presupuestos: Presupuesto[];
+    69→  loading: boolean;
+    70→  editing: Presupuesto | null;
+    71→  configuracion: Configuracion | null;
+    72→  onEdit: (presupuesto: Presupuesto) => void;
+    73→  onChanged: () => void;
+    74→};
+    75→
+    76→export function PresupuestosTable({
+    77→  presupuestos,
+    78→  loading,
+    79→  editing,
+    80→  configuracion,
+    81→  onEdit,
+    82→  onChanged,
+    83→}: PresupuestosTableProps) {
+    84→  const { toast } = useToast();
+    85→  const [busqueda, setBusqueda] = useState("");
+    86→  const [porEliminar, setPorEliminar] = useState<Presupuesto | null>(null);
+    87→  const [enVista, setEnVista] = useState<Presupuesto | null>(null);
+    88→  const [paraImprimir, setParaImprimir] = useState<Presupuesto | null>(null);
+    89→  const [eliminando, setEliminando] = useState(false);
+    90→
+    91→  /*
+    92→   * Mientras la vista previa de impresión está abierta: bloquea el
+    93→   * scroll de fondo, marca el body para el CSS de impresión, ajusta
+    94→   * el título del documento (nombre del PDF sugerido) y cierra con Esc.
+    95→   */
+    96→  useEffect(() => {
+    97→    if (!paraImprimir) return;
+    98→    const tituloAnterior = document.title;
+    99→    const folio = `PTO-${paraImprimir.id.slice(-6).toUpperCase()}`;
+   100→    document.body.classList.add("imprimiendo");
+   101→    document.body.style.overflow = "hidden";
+   102→    document.title = `Presupuesto ${folio} - ${paraImprimir.cliente.razonSocial}`;
+   103→    const onKeyDown = (event: KeyboardEvent) => {
+   104→      if (event.key === "Escape") setParaImprimir(null);
+   105→    };
+   106→    window.addEventListener("keydown", onKeyDown);
+   107→    return () => {
+   108→      document.body.classList.remove("imprimiendo");
+   109→      document.body.style.overflow = "";
+   110→      document.title = tituloAnterior;
+   111→      window.removeEventListener("keydown", onKeyDown);
+   112→    };
+   113→  }, [paraImprimir]);
+   114→
+   115→  const filtrados = useMemo(() => {
+   116→    const q = busqueda.trim().toLowerCase();
+   117→    if (!q) return presupuestos;
+   118→    return presupuestos.filter((p) => {
+   119→      const campos = [
+   120→        p.cliente.razonSocial,
+   121→        p.fecha,
+   122→        formatearFechaISO(p.fecha),
+   123→        p.observaciones ?? "",
+   124→        ...p.items.map((item) => item.descripcion),
+   125→      ];
+   126→      return campos.some((campo) => campo.toLowerCase().includes(q));
+   127→    });
+   128→  }, [presupuestos, busqueda]);
+   129→
+   130→  async function confirmarEliminar() {
+   131→    if (!porEliminar) return;
+   132→    setEliminando(true);
+   133→    try {
+   134→      const response = await fetch(`/api/presupuestos/${porEliminar.id}`, {
+   135→        method: "DELETE",
+   136→      });
+   137→      if (!response.ok) {
+   138→        const data = await response.json().catch(() => ({}));
+   139→        toast({
+   140→          variant: "destructive",
+   141→          title: "No se pudo eliminar",
+   142→          description: data?.error ?? "Intente nuevamente.",
+   143→        });
+   144→        return;
+   145→      }
+   146→      toast({
+   147→        title: "Presupuesto eliminado",
+   148→        description: `El presupuesto de "${porEliminar.cliente.razonSocial}" fue eliminado.`,
+   149→      });
+   150→      setPorEliminar(null);
+   151→      onChanged();
+   152→    } catch {
+   153→      toast({
+   154→        variant: "destructive",
+   155→        title: "Error de conexión",
+   156→        description:
+   157→          "No fue posible eliminar el presupuesto. Intente de nuevo.",
+   158→      });
+   159→    } finally {
+   160→      setEliminando(false);
+   161→    }
+   162→  }
+   163→
+   164→  return (
+   165→    <Card className="flex h-full flex-col">
+   166→      <CardHeader>
+   167→        <div className="flex flex-wrap items-start justify-between gap-3">
+   168→          <div className="min-w-0">
+   169→            <CardTitle className="text-lg">Presupuestos registrados</CardTitle>
+   170→            <CardDescription>
+   171→              {loading
+   172→                ? "Cargando información…"
+   173→                : `${presupuestos.length} ${
+   174→                    presupuestos.length === 1 ? "presupuesto" : "presupuestos"
+   175→                  } en total · ${filtrados.length} mostrados`}
+   176→            </CardDescription>
+   177→          </div>
+   178→          <Button
+   179→            variant="outline"
+   180→            size="icon"
+   181→            onClick={onChanged}
+   182→            disabled={loading}
+   183→            aria-label="Actualizar lista de presupuestos"
+   184→          >
+   185→            <RefreshCw
+   186→              className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"}
+   187→              aria-hidden="true"
+   188→            />
+   189→          </Button>
+   190→        </div>
+   191→
+   192→        <div className="relative mt-1">
+   193→          <Search
+   194→            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+   195→            aria-hidden="true"
+   196→          />
+   197→          <Input
+   198→            value={busqueda}
+   199→            onChange={(event) => setBusqueda(event.target.value)}
+   200→            placeholder="Buscar por cliente, fecha, producto…"
+   201→            className="pl-9"
+   202→            aria-label="Buscar presupuestos"
+   203→          />
+   204→        </div>
+   205→      </CardHeader>
+   206→
+   207→      <CardContent className="flex-1 pt-0">
+   208→        {loading ? (
+   209→          <div
+   210→            className="space-y-3"
+   211→            aria-busy="true"
+   212→            aria-label="Cargando presupuestos"
+   213→          >
+   214→            {Array.from({ length: 3 }).map((_, index) => (
+   215→              <div key={index} className="flex items-center gap-4">
+   216→                <Skeleton className="h-9 w-9 rounded-full" />
+   217→                <div className="flex-1 space-y-2">
+   218→                  <Skeleton className="h-4 w-1/2" />
+   219→                  <Skeleton className="h-3 w-1/4" />
+   220→                </div>
+   221→                <Skeleton className="h-8 w-24" />
+   222→              </div>
+   223→            ))}
+   224→          </div>
+   225→        ) : presupuestos.length === 0 ? (
+   226→          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-14 text-center">
+   227→            <ReceiptText
+   228→              className="mb-3 h-10 w-10 text-muted-foreground/50"
+   229→              aria-hidden="true"
+   230→            />
+   231→            <p className="font-medium">Aún no hay presupuestos registrados</p>
+   232→            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+   233→              Use el formulario &quot;Registrar presupuesto&quot; para crear el
+   234→              primero: elija el cliente, agregue productos y guarde.
+   235→            </p>
+   236→          </div>
+   237→        ) : filtrados.length === 0 ? (
+   238→          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-14 text-center">
+   239→            <Search
+   240→              className="mb-3 h-8 w-8 text-muted-foreground/50"
+   241→              aria-hidden="true"
+   242→            />
+   243→            <p className="font-medium">Sin resultados</p>
+   244→            <p className="mt-1 text-sm text-muted-foreground">
+   245→              Ningún presupuesto coincide con &quot;{busqueda}&quot;.
+   246→            </p>
+   247→          </div>
+   248→        ) : (
+   249→          <TooltipProvider delayDuration={200}>
+   250→            {/* Tarjetas (móvil) */}
+   251→            <div className="space-y-3 sm:hidden">
+   252→              {filtrados.map((presupuesto) => {
+   253→                const esSeleccionado = editing?.id === presupuesto.id;
+   254→                return (
+   255→                  <div
+   256→                    key={presupuesto.id}
+   257→                    className={`rounded-lg border p-3 ${
+   258→                      esSeleccionado ? "bg-accent/60" : undefined
+   259→                    }`}
+   260→                  >
+   261→                    <div className="flex items-center justify-between gap-2">
+   262→                      <span className="text-xs tabular-nums text-muted-foreground">
+   263→                        {formatearFechaISO(presupuesto.fecha)}
+   264→                      </span>
+   265→                      <span className="text-sm font-semibold tabular-nums">
+   266→                        {formatearMoneda(presupuesto.total)}
+   267→                      </span>
+   268→                    </div>
+   269→                    <p
+   270→                      className="mt-0.5 truncate font-medium"
+   271→                      title={presupuesto.cliente.razonSocial}
+   272→                    >
+   273→                      {presupuesto.cliente.razonSocial}
+   274→                    </p>
+   275→                    <p className="text-xs text-muted-foreground">
+   276→                      {presupuesto.items.length}{" "}
+   277→                      {presupuesto.items.length === 1
+   278→                        ? "producto"
+   279→                        : "productos"}{" "}
+   280→                      {presupuesto.items.length > 0 &&
+   281→                        `· ${formatearMoneda(presupuesto.subtotal)}`}
+   282→                    </p>
+   283→                    <div className="mt-2 flex justify-end gap-1 border-t pt-2">
+   284→                      <Tooltip>
+   285→                        <TooltipTrigger asChild>
+   286→                          <Button
+   287→                            variant="ghost"
+   288→                            size="icon"
+   289→                            className="h-8 w-8"
+   290→                            onClick={() => setEnVista(presupuesto)}
+   291→                            aria-label={`Ver presupuesto de ${presupuesto.cliente.razonSocial}`}
+   292→                          >
+   293→                            <Eye className="h-4 w-4" aria-hidden="true" />
+   294→                          </Button>
+   295→                        </TooltipTrigger>
+   296→                        <TooltipContent>Ver detalle</TooltipContent>
+   297→                      </Tooltip>
+   298→
+   299→                      <Tooltip>
+   300→                        <TooltipTrigger asChild>
+   301→                          <Button
+   302→                            variant="ghost"
+   303→                            size="icon"
+   304→                            className="h-8 w-8"
+   305→                            onClick={() => setParaImprimir(presupuesto)}
+   306→                            aria-label={`Imprimir presupuesto de ${presupuesto.cliente.razonSocial}`}
+   307→                          >
+   308→                            <Printer className="h-4 w-4" aria-hidden="true" />
+   309→                          </Button>
+   310→                        </TooltipTrigger>
+   311→                        <TooltipContent>Imprimir / PDF</TooltipContent>
+   312→                      </Tooltip>
+   313→
+   314→                      <Tooltip>
+   315→                        <TooltipTrigger asChild>
+   316→                          <Button
+   317→                            variant="ghost"
+   318→                            size="icon"
+   319→                            className="h-8 w-8"
+   320→                            onClick={() => onEdit(presupuesto)}
+   321→                            aria-label={`Editar presupuesto de ${presupuesto.cliente.razonSocial}`}
+   322→                          >
+   323→                            <Pencil className="h-4 w-4" aria-hidden="true" />
+   324→                          </Button>
+   325→                        </TooltipTrigger>
+   326→                        <TooltipContent>Editar</TooltipContent>
+   327→                      </Tooltip>
+   328→
+   329→                      <Tooltip>
+   330→                        <TooltipTrigger asChild>
+   331→                          <Button
+   332→                            variant="ghost"
+   333→                            size="icon"
+   334→                            className="h-8 w-8 text-destructive hover:text-destructive"
+   335→                            onClick={() => setPorEliminar(presupuesto)}
+   336→                            aria-label={`Eliminar presupuesto de ${presupuesto.cliente.razonSocial}`}
+   337→                          >
+   338→                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+   339→                          </Button>
+   340→                        </TooltipTrigger>
+   341→                        <TooltipContent>Eliminar</TooltipContent>
+   342→                      </Tooltip>
+   343→                    </div>
+   344→                  </div>
+   345→                );
+   346→              })}
+   347→            </div>
+   348→
+   349→            {/* Tabla (tableta / escritorio) */}
+   350→            <ScrollArea className="hidden max-h-[560px] pr-3 sm:block">
+   351→              <Table className="table-fixed">
+   352→                <TableHeader className="sticky top-0 z-10 bg-card">
+   353→                  <TableRow>
+   354→                    <TableHead className="w-[11%] whitespace-nowrap">
+   355→                      Fecha
+   356→                    </TableHead>
+   357→                    <TableHead className="w-[27%]">Cliente</TableHead>
+   358→                    <TableHead className="hidden w-[15%] lg:table-cell">
+   359→                      Productos
+   360→                    </TableHead>
+   361→                    <TableHead className="hidden w-[13%] whitespace-nowrap px-2 text-right sm:table-cell">
+   362→                      Sub total
+   363→                    </TableHead>
+   364→                    <TableHead className="hidden w-[11%] whitespace-nowrap px-2 text-right sm:table-cell">
+   365→                      IVA
+   366→                    </TableHead>
+   367→                    <TableHead className="w-[12%] whitespace-nowrap px-2 text-right">
+   368→                      Total
+   369→                    </TableHead>
+   370→                    <TableHead className="w-[148px] text-right">
+   371→                      Acciones
+   372→                    </TableHead>
+   373→                  </TableRow>
+   374→                </TableHeader>
+   375→                <TableBody>
+   376→                  {filtrados.map((presupuesto) => {
+   377→                    const esSeleccionado = editing?.id === presupuesto.id;
+   378→                    const primerProducto =
+   379→                      presupuesto.items[0]?.descripcion ?? "";
+   380→                    const restantes = presupuesto.items.length - 1;
+   381→                    return (
+   382→                      <TableRow
+   383→                        key={presupuesto.id}
+   384→                        className={esSeleccionado ? "bg-accent/60" : undefined}
+   385→                      >
+   386→                        <TableCell className="whitespace-nowrap align-top text-sm tabular-nums">
+   387→                          {formatearFechaISO(presupuesto.fecha)}
+   388→                        </TableCell>
+   389→
+   390→                        <TableCell className="align-top">
+   391→                          <span
+   392→                            className="block truncate font-medium"
+   393→                            title={presupuesto.cliente.razonSocial}
+   394→                          >
+   395→                            {presupuesto.cliente.razonSocial}
+   396→                          </span>
+   397→                          <p className="text-xs text-muted-foreground lg:hidden">
+   398→                            {presupuesto.items.length}{" "}
+   399→                            {presupuesto.items.length === 1
+   400→                              ? "producto"
+   401→                              : "productos"}
+   402→                          </p>
+   403→                        </TableCell>
+   404→
+   405→                        <TableCell className="hidden align-top lg:table-cell">
+   406→                          <span
+   407→                            className="block truncate text-sm"
+   408→                            title={primerProducto}
+   409→                          >
+   410→                            {primerProducto}
+   411→                          </span>
+   412→                          {restantes > 0 && (
+   413→                            <p className="truncate text-xs text-muted-foreground">
+   414→                              + {restantes}{" "}
+   415→                              {restantes === 1 ? "producto más" : "productos más"}
+   416→                            </p>
+   417→                          )}
+   418→                        </TableCell>
+   419→
+   420→                        <TableCell className="hidden whitespace-nowrap px-2 align-top text-right text-sm tabular-nums sm:table-cell">
+   421→                          {formatearMoneda(presupuesto.subtotal)}
+   422→                        </TableCell>
+   423→
+   424→                        <TableCell className="hidden whitespace-nowrap px-2 align-top text-right text-sm tabular-nums text-muted-foreground sm:table-cell">
+   425→                          {formatearMoneda(presupuesto.iva)}
+   426→                        </TableCell>
+   427→
+   428→                        <TableCell className="whitespace-nowrap px-2 align-top text-right text-sm font-semibold tabular-nums">
+   429→                          {formatearMoneda(presupuesto.total)}
+   430→                        </TableCell>
+   431→
+   432→                        <TableCell className="text-right">
+   433→                          <div className="flex justify-end gap-1">
+   434→                            <Tooltip>
+   435→                              <TooltipTrigger asChild>
+   436→                                <Button
+   437→                                  variant="ghost"
+   438→                                  size="icon"
+   439→                                  className="h-8 w-8"
+   440→                                  onClick={() => setEnVista(presupuesto)}
+   441→                                  aria-label={`Ver presupuesto de ${presupuesto.cliente.razonSocial}`}
+   442→                                >
+   443→                                  <Eye
+   444→                                    className="h-4 w-4"
+   445→                                    aria-hidden="true"
+   446→                                  />
+   447→                                </Button>
+   448→                              </TooltipTrigger>
+   449→                              <TooltipContent>Ver detalle</TooltipContent>
+   450→                            </Tooltip>
+   451→
+   452→                            <Tooltip>
+   453→                              <TooltipTrigger asChild>
+   454→                                <Button
+   455→                                  variant="ghost"
+   456→                                  size="icon"
+   457→                                  className="h-8 w-8"
+   458→                                  onClick={() => setParaImprimir(presupuesto)}
+   459→                                  aria-label={`Imprimir presupuesto de ${presupuesto.cliente.razonSocial}`}
+   460→                                >
+   461→                                  <Printer
+   462→                                    className="h-4 w-4"
+   463→                                    aria-hidden="true"
+   464→                                  />
+   465→                                </Button>
+   466→                              </TooltipTrigger>
+   467→                              <TooltipContent>Imprimir / PDF</TooltipContent>
+   468→                            </Tooltip>
+   469→
+   470→                            <Tooltip>
+   471→                              <TooltipTrigger asChild>
+   472→                                <Button
+   473→                                  variant="ghost"
+   474→                                  size="icon"
+   475→                                  className="h-8 w-8"
+   476→                                  onClick={() => onEdit(presupuesto)}
+   477→                                  aria-label={`Editar presupuesto de ${presupuesto.cliente.razonSocial}`}
+   478→                                >
+   479→                                  <Pencil
+   480→                                    className="h-4 w-4"
+   481→                                    aria-hidden="true"
+   482→                                  />
+   483→                                </Button>
+   484→                              </TooltipTrigger>
+   485→                              <TooltipContent>Editar</TooltipContent>
+   486→                            </Tooltip>
+   487→
+   488→                            <Tooltip>
+   489→                              <TooltipTrigger asChild>
+   490→                                <Button
+   491→                                  variant="ghost"
+   492→                                  size="icon"
+   493→                                  className="h-8 w-8 text-destructive hover:text-destructive"
+   494→                                  onClick={() => setPorEliminar(presupuesto)}
+   495→                                  aria-label={`Eliminar presupuesto de ${presupuesto.cliente.razonSocial}`}
+   496→                                >
+   497→                                  <Trash2
+   498→                                    className="h-4 w-4"
+   499→                                    aria-hidden="true"
+   500→                                  />
+   501→                                </Button>
+   502→                              </TooltipTrigger>
+   503→                              <TooltipContent>Eliminar</TooltipContent>
+   504→                            </Tooltip>
+   505→                          </div>
+   506→                        </TableCell>
+   507→                      </TableRow>
+   508→                    );
+   509→                  })}
+   510→                </TableBody>
+   511→              </Table>
+   512→            </ScrollArea>
+   513→          </TooltipProvider>
+   514→        )}
+   515→      </CardContent>
+   516→
+   517→      {/* Detalle del presupuesto */}
+   518→      <Dialog
+   519→        open={enVista !== null}
+   520→        onOpenChange={(open) => !open && setEnVista(null)}
+   521→      >
+   522→        <DialogContent className="max-h-[85vh] overflow-y-auto">
+   523→          {enVista && (
+   524→            <>
+   525→              <DialogHeader>
+   526→                <DialogTitle className="flex items-center gap-2">
+   527→                  <ReceiptText
+   528→                    className="h-4 w-4 text-primary"
+   529→                    aria-hidden="true"
+   530→                  />
+   531→                  Presupuesto · {formatearFechaISO(enVista.fecha)}
+   532→                </DialogTitle>
+   533→                <DialogDescription>
+   534→                  Cliente: {enVista.cliente.razonSocial}
+   535→                </DialogDescription>
+   536→              </DialogHeader>
+   537→
+   538→              <Button
+   539→                variant="outline"
+   540→                size="sm"
+   541→                className="w-full"
+   542→                onClick={() => {
+   543→                  setEnVista(null);
+   544→                  setParaImprimir(enVista);
+   545→                }}
+   546→              >
+   547→                <Printer className="h-4 w-4" aria-hidden="true" />
+   548→                Imprimir / Guardar PDF
+   549→              </Button>
+   550→
+   551→              {enVista.observaciones && (
+   552→                <p className="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+   553→                  <span className="font-medium text-foreground">
+   554→                    Observaciones:{" "}
+   555→                  </span>
+   556→                  {enVista.observaciones}
+   557→                </p>
+   558→              )}
+   559→
+   560→              <div className="space-y-2">
+   561→                <p className="text-sm font-medium">Productos</p>
+   562→                <div className="rounded-lg border">
+   563→                  <Table>
+   564→                    <TableHeader>
+   565→                      <TableRow>
+   566→                        <TableHead className="w-[52%]">Producto</TableHead>
+   567→                        <TableHead className="px-2 text-right">
+   568→                          Cantidad
+   569→                        </TableHead>
+   570→                        <TableHead className="px-2 text-right">
+   571→                          P. unitario
+   572→                        </TableHead>
+   573→                        <TableHead className="px-2 text-right">
+   574→                          Importe
+   575→                        </TableHead>
+   576→                      </TableRow>
+   577→                    </TableHeader>
+   578→                    <TableBody>
+   579→                      {enVista.items.map((item) => (
+   580→                        <TableRow key={item.id}>
+   581→                          <TableCell className="align-top">
+   582→                            <span
+   583→                              className="block truncate font-medium"
+   584→                              title={item.descripcion}
+   585→                            >
+   586→                              {item.descripcion}
+   587→                            </span>
+   588→                            <p className="truncate text-xs text-muted-foreground">
+   589→                              {item.unidad ?? "—"} · IVA {item.ivaTasa}%
+   590→                              {item.codigoSat ? ` · Cód. ${item.codigoSat}` : ""}
+   591→                            </p>
+   592→                          </TableCell>
+   593→                          <TableCell className="px-2 align-top text-right text-sm tabular-nums">
+   594→                            {item.cantidad}
+   595→                          </TableCell>
+   596→                          <TableCell className="whitespace-nowrap px-2 align-top text-right text-sm tabular-nums">
+   597→                            {formatearMoneda(item.precioUnitario)}
+   598→                          </TableCell>
+   599→                          <TableCell className="whitespace-nowrap px-2 align-top text-right text-sm font-medium tabular-nums">
+   600→                            {formatearMoneda(item.importe)}
+   601→                          </TableCell>
+   602→                        </TableRow>
+   603→                      ))}
+   604→                    </TableBody>
+   605→                  </Table>
+   606→                </div>
+   607→              </div>
+   608→
+   609→              <Separator />
+   610→
+   611→              <div className="ml-auto w-full max-w-xs space-y-1.5">
+   612→                <div className="flex items-center justify-between text-sm">
+   613→                  <span className="text-muted-foreground">SUB TOTAL</span>
+   614→                  <span className="font-medium tabular-nums">
+   615→                    {formatearMoneda(enVista.subtotal)}
+   616→                  </span>
+   617→                </div>
+   618→                <div className="flex items-center justify-between text-sm">
+   619→                  <span className="text-muted-foreground">IVA</span>
+   620→                  <span className="tabular-nums">
+   621→                    {formatearMoneda(enVista.iva)}
+   622→                  </span>
+   623→                </div>
+   624→                <div className="flex items-center justify-between border-t pt-2">
+   625→                  <span className="text-sm font-semibold">TOTAL</span>
+   626→                  <span className="text-lg font-bold tabular-nums text-primary">
+   627→                    {formatearMoneda(enVista.total)}
+   628→                  </span>
+   629→                </div>
+   630→              </div>
+   631→            </>
+   632→          )}
+   633→        </DialogContent>
+   634→      </Dialog>
+   635→
+   636→      {/* Confirmación de eliminación */}
+   637→      <AlertDialog
+   638→        open={porEliminar !== null}
+   639→        onOpenChange={(open) => !open && setPorEliminar(null)}
+   640→      >
+   641→        <AlertDialogContent>
+   642→          <AlertDialogHeader>
+   643→            <AlertDialogTitle>¿Eliminar presupuesto?</AlertDialogTitle>
+   644→            <AlertDialogDescription>
+   645→              Se eliminará el presupuesto de &quot;
+   646→              {porEliminar?.cliente.razonSocial}&quot; del{" "}
+   647→              {porEliminar ? formatearFechaISO(porEliminar.fecha) : ""} por{" "}
+   648→              <strong>
+   649→                {porEliminar ? formatearMoneda(porEliminar.total) : ""}
+   650→              </strong>
+   651→              , junto con sus {porEliminar?.items.length ?? 0}{" "}
+   652→              {(porEliminar?.items.length ?? 0) === 1 ? "partida" : "partidas"}.
+   653→              Esta acción no se puede deshacer.
+   654→            </AlertDialogDescription>
+   655→          </AlertDialogHeader>
+   656→          <AlertDialogFooter>
+   657→            <AlertDialogCancel disabled={eliminando}>
+   658→              Cancelar
+   659→            </AlertDialogCancel>
+   660→            <AlertDialogAction
+   661→              onClick={(event) => {
+   662→                event.preventDefault();
+   663→                confirmarEliminar();
+   664→              }}
+   665→              disabled={eliminando}
+   666→              className="bg-destructive text-white hover:bg-destructive/90"
+   667→            >
+   668→              {eliminando ? (
+   669→                <>
+   670→                  <Loader2
+   671→                    className="mr-2 h-4 w-4 animate-spin"
+   672→                    aria-hidden="true"
+   673→                  />
+   674→                  Eliminando…
+   675→                </>
+   676→              ) : (
+   677→                "Eliminar"
+   678→              )}
+   679→            </AlertDialogAction>
+   680→          </AlertDialogFooter>
+   681→        </AlertDialogContent>
+   682→      </AlertDialog>
+   683→
+   684→      {/* Vista previa de impresión del documento formal */}
+   685→      {paraImprimir &&
+   686→        createPortal(
+   687→          <div className="capa-impresion fixed inset-0 z-[70] overflow-y-auto bg-neutral-200/90 p-4 sm:p-8">
+   688→            <div className="barra-impresion sticky top-0 z-10 mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-lg border bg-card p-2 shadow-sm">
+   689→              <Button
+   690→                variant="outline"
+   691→                size="sm"
+   692→                onClick={() => setParaImprimir(null)}
+   693→              >
+   694→                <X className="h-4 w-4" aria-hidden="true" />
+   695→                Cerrar
+   696→              </Button>
+   697→              <p className="hidden truncate text-sm text-muted-foreground sm:block">
+   698→                Vista previa · Presupuesto de &quot;
+   699→                {paraImprimir.cliente.razonSocial}&quot;
+   700→              </p>
+   701→              <Button size="sm" onClick={() => window.print()}>
+   702→                <Printer className="h-4 w-4" aria-hidden="true" />
+   703→                Imprimir / Guardar PDF
+   704→              </Button>
+   705→            </div>
+   706→            <div className="hoja-documento mx-auto mt-4 w-full max-w-3xl border bg-white shadow-xl">
+   707→              <PresupuestoDocumento
+   708→                presupuesto={paraImprimir}
+   709→                configuracion={configuracion}
+   710→              />
+   711→            </div>
+   712→          </div>,
+   713→          document.body
+   714→        )}
+   715→    </Card>
+   716→  );
+   717→}
+   718→

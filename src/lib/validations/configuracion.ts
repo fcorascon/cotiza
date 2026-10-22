@@ -102,6 +102,11 @@ export const configuracionSchema = z.object({
     message: "Seleccione el tipo de fila",
   }),
   reciboLogo: logotipoSchema,
+
+  // Apariencia de toda la aplicación
+  colorPrimario: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Seleccione un color válido"),
 });
 
 export type ConfiguracionInput = z.infer<typeof configuracionSchema>;
@@ -129,3 +134,31 @@ export const smtpPruebaSchema = z.object({
 });
 
 export type SmtpPruebaInput = z.infer<typeof smtpPruebaSchema>;
+
+/**
+ * Esquema para el envío de un presupuesto por correo electrónico.
+ * El asunto y el mensaje son opcionales: el servidor genera un asunto
+ * por defecto cuando no se envía.
+ */
+export const envioCorreoSchema = z.object({
+  destino: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Correo de destino inválido")
+    .max(150, "El correo no puede exceder 150 caracteres"),
+  asunto: z
+    .string()
+    .trim()
+    .max(150, "El asunto no puede exceder 150 caracteres")
+    .optional()
+    .or(z.literal("")),
+  mensaje: z
+    .string()
+    .trim()
+    .max(1000, "El mensaje no puede exceder 1000 caracteres")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type EnvioCorreoInput = z.infer<typeof envioCorreoSchema>;

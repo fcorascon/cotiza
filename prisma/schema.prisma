@@ -85,6 +85,7 @@ model Presupuesto {
   iva           Float
   total         Float
   items         PresupuestoItem[]
+  envios        EnvioCorreo[]
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
@@ -131,6 +132,27 @@ model Configuracion {
   reciboColor      String   @default("#1D4ED8")
   reciboFila       String   @default("grande")
   reciboLogo       String?
+  colorPrimario    String   @default("#191970")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+/*
+ * Bitácora de correos enviados desde la aplicación (presupuestos).
+ * presupuestoId es opcional con SetNull: conservar el historial aunque
+ * el presupuesto se elimine después.
+ */
+model EnvioCorreo {
+  id            String       @id @default(cuid())
+  presupuestoId String?
+  presupuesto   Presupuesto? @relation(fields: [presupuestoId], references: [id], onDelete: SetNull)
+  destino       String
+  asunto        String
+  estado        String       @default("ENVIADO")
+  error         String?
+  messageId     String?
+  createdAt     DateTime     @default(now())
+
+  @@index([presupuestoId])
+  @@index([createdAt])
 }

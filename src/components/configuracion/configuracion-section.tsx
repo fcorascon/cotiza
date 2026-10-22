@@ -15,9 +15,15 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useConfiguracionAplicacion,
+} from "@/components/configuracion-aplicacion";
 import { EmpresaCard } from "@/components/configuracion/empresa-card";
 import { SmtpCard } from "@/components/configuracion/smtp-card";
 import { DisenoCard } from "@/components/configuracion/diseno-card";
+import {
+  AparienciaCard,
+} from "@/components/configuracion/apariencia-card";
 import {
   configuracionSchema,
   type ConfiguracionInput,
@@ -44,6 +50,7 @@ const VALORES_VACIOS: ConfiguracionInput = {
   reciboColor: "#1D4ED8",
   reciboFila: "grande",
   reciboLogo: null,
+  colorPrimario: "#191970",
 };
 
 /** Convierte la configuración del servidor a valores del formulario. */
@@ -68,11 +75,13 @@ function aValoresFormulario(config: Configuracion): ConfiguracionInput {
     reciboColor: config.reciboColor,
     reciboFila: config.reciboFila as ConfiguracionInput["reciboFila"],
     reciboLogo: config.reciboLogo ?? null,
+    colorPrimario: config.colorPrimario,
   };
 }
 
 export function ConfiguracionSection() {
   const { toast } = useToast();
+  const { actualizar } = useConfiguracionAplicacion();
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [cargados, setCargados] = useState<ConfiguracionInput | null>(null);
@@ -136,6 +145,8 @@ export function ConfiguracionSection() {
       const valores = aValoresFormulario(data as Configuracion);
       setCargados(valores);
       form.reset(valores);
+      // Aplica de inmediato el color/logotipo a toda la aplicación.
+      actualizar(data as Configuracion);
       toast({
         title: "Configuración guardada",
         description: "Los cambios se aplicaron correctamente.",
@@ -169,8 +180,8 @@ export function ConfiguracionSection() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Configuración</h1>
           <p className="text-sm text-muted-foreground">
-            Preferencias del sistema: datos de la empresa, servidor de correo y
-            diseño de documentos.
+            Preferencias del sistema: apariencia de la aplicación, datos de la
+            empresa, servidor de correo y diseño de documentos.
           </p>
         </div>
       </div>
@@ -195,6 +206,7 @@ export function ConfiguracionSection() {
           <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
             <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
               <div className="space-y-6">
+                <AparienciaCard form={form} />
                 <EmpresaCard form={form} />
                 <SmtpCard form={form} />
               </div>

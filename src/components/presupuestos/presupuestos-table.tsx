@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import {
   Eye,
   Loader2,
+  Mail,
   Pencil,
   Printer,
   ReceiptText,
@@ -62,6 +63,9 @@ import {
 } from "@/lib/presupuestos-utils";
 import { formatearMoneda } from "@/lib/productos-utils";
 import { PresupuestoDocumento } from "@/components/presupuestos/presupuesto-documento";
+import {
+  EnviarCorreoDialog,
+} from "@/components/presupuestos/enviar-correo-dialog";
 import type { Configuracion, Presupuesto } from "@/lib/types";
 
 type PresupuestosTableProps = {
@@ -86,6 +90,7 @@ export function PresupuestosTable({
   const [porEliminar, setPorEliminar] = useState<Presupuesto | null>(null);
   const [enVista, setEnVista] = useState<Presupuesto | null>(null);
   const [paraImprimir, setParaImprimir] = useState<Presupuesto | null>(null);
+  const [paraEnviar, setParaEnviar] = useState<Presupuesto | null>(null);
   const [eliminando, setEliminando] = useState(false);
 
   /*
@@ -317,6 +322,21 @@ export function PresupuestosTable({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
+                            onClick={() => setParaEnviar(presupuesto)}
+                            aria-label={`Enviar por correo el presupuesto de ${presupuesto.cliente.razonSocial}`}
+                          >
+                            <Mail className="h-4 w-4" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Enviar por correo</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => onEdit(presupuesto)}
                             aria-label={`Editar presupuesto de ${presupuesto.cliente.razonSocial}`}
                           >
@@ -465,6 +485,24 @@ export function PresupuestosTable({
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Imprimir / PDF</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => setParaEnviar(presupuesto)}
+                                  aria-label={`Enviar por correo el presupuesto de ${presupuesto.cliente.razonSocial}`}
+                                >
+                                  <Mail
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Enviar por correo</TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
@@ -680,6 +718,12 @@ export function PresupuestosTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Envío del presupuesto por correo electrónico */}
+      <EnviarCorreoDialog
+        presupuesto={paraEnviar}
+        onClose={() => setParaEnviar(null)}
+      />
 
       {/* Vista previa de impresión del documento formal */}
       {paraImprimir &&
