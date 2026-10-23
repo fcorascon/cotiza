@@ -407,3 +407,16 @@ Stage Summary:
 - La sesión ya no depende exclusivamente de la cookie: si el navegador la bloquea o la descarta (app embebida/iframe, incógnito), el cliente envía el token firmado por el encabezado "x-sesion" y el servidor lo acepta como respaldo. Fin del bucle "Sesión finalizada → login" en entornos con cookies de terceros bloqueadas.
 - Cierre de sesión y expiración limpian ambos mecanismos (cookie + token local), sin ventanas de sesión residual.
 - La cookie HttpOnly sigue siendo la vía principal; el respaldo solo actúa cuando la cookie no viaja.
+---
+Task ID: 38
+Agent: main (Z.ai)
+Task: Mover la sección Productos en el menú a continuación de Clientes.
+
+Work Log:
+- app-shell.tsx: en NAV_ITEMS (fuente única del menú de escritorio y del Sheet móvil), Productos pasó de la 6.ª posición a la 2.ª, justo debajo de Clientes. Orden final: Clientes · Productos · Presupuestos · Unidades · Categorías · IVA · Configuración · Usuarios (Usuarios sigue visible solo para ADMIN).
+- Pie del menú (línea de versión) actualizado con el mismo orden: "Versión 1.8 · Clientes · Productos · Presupuestos · Unidades · Categorías · IVA · Configuración · Usuarios".
+- Verificación E2E (agent-browser): escritorio 1440×900 — el menú muestra Clientes, Productos, Presupuestos…; clic en Productos carga la sección (h1 "Productos"). Móvil 390×844 — el Sheet muestra el mismo orden. Sin errores de consola ni de página. Lint limpio.
+- Capturas: download/menu-productos-junto-clientes-escritorio.png, menu-productos-junto-clientes-movil.png.
+
+Stage Summary:
+- El menú lateral y el menú móvil ahora listan Productos inmediatamente después de Clientes (prioridad de acceso al catálogo de 699 productos); la navegación por id no requirió otros cambios y la sección sigue funcionando igual.
