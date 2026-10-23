@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Calculator,
   ClipboardList,
+  LogOut,
   Menu,
   Package,
   Percent,
@@ -11,10 +12,12 @@ import {
   Ruler,
   Settings,
   Tags,
+  UserCog,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
@@ -22,17 +25,18 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
 import {
   useConfiguracionAplicacion,
 } from "@/components/configuracion-aplicacion";
-import type { SeccionApp } from "@/lib/types";
+import type { SesionActiva, SeccionApp } from "@/lib/types";
 
 type NavItem = {
   id: SeccionApp;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   enabled: boolean;
+  /** Si se define, el elemento solo se muestra a ese rol. */
+  soloRol?: SesionActiva["rol"];
 };
 
 const NAV_ITEMS: (NavItem | { id: null; label: string; icon: React.ComponentType<{ className?: string }>; enabled: false })[] = [
@@ -48,14 +52,25 @@ const NAV_ITEMS: (NavItem | { id: null; label: string; icon: React.ComponentType
   { id: "ivas", label: "IVA", icon: Percent, enabled: true },
   { id: "productos", label: "Productos", icon: Package, enabled: true },
   { id: "configuracion", label: "Configuración", icon: Settings, enabled: true },
+  {
+    id: "usuarios",
+    label: "Usuarios",
+    icon: UserCog,
+    enabled: true,
+    soloRol: "ADMIN",
+  },
 ];
 
 function NavContent({
   active,
   onSelect,
+  usuario,
+  onCerrarSesion,
 }: {
   active: SeccionApp;
   onSelect: (seccion: SeccionApp) => void;
+  usuario: SesionActiva | null;
+  onCerrarSesion: () => void;
 }) {
   const { configuracion } = useConfiguracionAplicacion();
   const nombreEmpresa = configuracion?.nombreComercial || "Admin de Presupuestos";
@@ -89,6 +104,10 @@ function NavContent({
       >
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
+
+          if (item.id !== null && item.soloRol && usuario?.rol !== item.soloRol) {
+            return null;
+          }
 
           if (!item.enabled || item.id === null) {
             return (
@@ -130,9 +149,40 @@ function NavContent({
         })}
       </nav>
 
-      <div className="border-t px-5 py-4">
-        <p className="text-xs text-muted-foreground">
-          Versión 1.7 · Clientes · Presupuestos · Unidades · Categorías · IVA · Productos · Configuración
+      <div className="border-t px-4 py-3">
+        {usuario && (
+          <div className="mb-2 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <span className="text-sm font-semibold" aria-hidden="true">
+                {usuario.nombre.trim().charAt(0).toUpperCase() || "?"}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium" title={usuario.nombre}>
+                {usuario.nombre}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {usuario.rol === "ADMIN" ? "Administrador" : "Usuario"} · {""}
+                {usuario.usuario}
+              </p>
+            </div>
+          </div>
+        )}
+        {usuario && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={onCerrarSesion}
+          >
+            <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+            Cerrar sesión
+          </Button>
+        )}
+        <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
+          Versión 1.8 · Clientes · Presupuestos · Unidades · Categorías · IVA ·
+          Productos · Configuración · Usuarios
         </p>
       </div>
     </div>
@@ -142,10 +192,12 @@ function NavContent({
 type AppShellProps = {
   active: SeccionApp;
   onNavigate: (seccion: SeccionApp) => void;
+  usuario: SesionActiva | null;
+  onCerrarSesion: () => void;
   children: React.ReactNode;
 };
 
-export function AppShell({ active, onNavigate, children }: AppShellProps) {
+export function AppShell({ active, onNavigate, usuario, onCerrarSesion, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { configuracion } = useConfiguracionAplicacion();
   const nombreEmpresa = configuracion?.nombreComercial || "Admin de Presupuestos";
@@ -160,7 +212,7 @@ export function AppShell({ active, onNavigate, children }: AppShellProps) {
     <div className="flex min-h-screen bg-muted/40">
       {/* Barra lateral (escritorio) */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-sidebar text-sidebar-foreground lg:block">
-        <NavContent active={active} onSelect={handleSelect} />
+        <NavContent active={active} onSelect={handleSelect} usuario={usuario} onCerrarSesion={onCerrarSesion} />
       </aside>
 
       <div className="flex min-h-screen w-full flex-col lg:pl-64">
@@ -181,7 +233,7 @@ export function AppShell({ active, onNavigate, children }: AppShellProps) {
               <SheetDescription className="sr-only">
                 Navegación entre las secciones de la aplicación
               </SheetDescription>
-              <NavContent active={active} onSelect={handleSelect} />
+              <NavContent active={active} onSelect={handleSelect} usuario={usuario} onCerrarSesion={onCerrarSesion} />
             </SheetContent>
           </Sheet>
           <div className="flex min-w-0 items-center gap-2">

@@ -143,6 +143,25 @@ export type EnvioCorreo = {
   createdAt: string;
 };
 
+/** Usuario con acceso a la aplicación (la contraseña nunca viaja al cliente). */
+export type Usuario = {
+  id: string;
+  usuario: string;
+  nombre: string;
+  rol: "ADMIN" | "USUARIO";
+  activo: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** Usuario autenticado en la sesión actual. */
+export type SesionActiva = {
+  id: string;
+  usuario: string;
+  nombre: string;
+  rol: "ADMIN" | "USUARIO";
+};
+
 export type SeccionApp =
   | "clientes"
   | "presupuestos"
@@ -150,4 +169,5 @@ export type SeccionApp =
   | "categorias"
   | "ivas"
   | "productos"
+  | "usuarios"
   | "configuracion";

@@ -112,6 +112,22 @@ model PresupuestoItem {
   @@index([presupuestoId])
 }
 
+/*
+ * Usuarios con acceso a la aplicación.
+ * rol: "ADMIN" (administrador, gestiona usuarios) | "USUARIO" (acceso operativo).
+ * La contraseña nunca se guarda en texto plano: solo su hash bcrypt.
+ */
+model Usuario {
+  id           String   @id @default(cuid())
+  usuario      String   @unique
+  nombre       String
+  passwordHash String
+  rol          String   @default("USUARIO")
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Configuracion {
   id               String   @id @default("principal")
   nombreComercial  String
