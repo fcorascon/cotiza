@@ -56,6 +56,19 @@ export type ProductoConRelaciones = Producto & {
   iva: Iva;
 };
 
+/**
+ * Producto en formato compacto para el selector del presupuesto
+ * (respuesta de /api/productos?vista=combobox).
+ */
+export type ProductoCombobox = {
+  id: string;
+  descripcion: string;
+  codigoSat: string;
+  subtotal: number;
+  unidad: string;
+  tasa: number;
+};
+
 export type PresupuestoItem = {
   id: string;
   presupuestoId: string;

@@ -22,11 +22,24 @@ async function obtenerConfiguracion() {
 /**
  * GET /api/configuracion
  * Devuelve la configuración del sistema. Nunca expone smtpPassword.
+ * Con ?basico=1 devuelve solo la identidad de la app (nombre comercial,
+ * logotipo y color primario), usada al arrancar para no transportar el
+ * resto de campos ni los logotipos de los documentos.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const config = await obtenerConfiguracion();
     const { smtpPassword: _omitida, ...publica } = config;
+
+    if (new URL(request.url).searchParams.get("basico") === "1") {
+      return NextResponse.json({
+        id: publica.id,
+        nombreComercial: publica.nombreComercial,
+        logo: publica.logo,
+        colorPrimario: publica.colorPrimario,
+      });
+    }
+
     return NextResponse.json(publica);
   } catch (error) {
     console.error("GET /api/configuracion error:", error);

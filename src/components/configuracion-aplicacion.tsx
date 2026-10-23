@@ -62,7 +62,10 @@ export function ConfiguracionAplicacionProvider({
     let cancelada = false;
     (async () => {
       try {
-        const response = await fetch("/api/configuracion", {
+        // Versión básica: solo identidad (nombre, logotipo y color).
+        // Evita transportar en cada arranque los logotipos de documentos
+        // y la configuración SMTP completa.
+        const response = await fetch("/api/configuracion?basico=1", {
           cache: "no-store",
         });
         if (!response.ok) return;

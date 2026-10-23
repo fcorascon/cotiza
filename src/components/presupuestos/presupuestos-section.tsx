@@ -5,12 +5,13 @@ import { Plus, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PresupuestoForm } from "@/components/presupuestos/presupuesto-form";
 import { PresupuestosTable } from "@/components/presupuestos/presupuestos-table";
+import {
+  useConfiguracionAplicacion,
+} from "@/components/configuracion-aplicacion";
 import { useToast } from "@/hooks/use-toast";
 import type {
   Cliente,
-  Configuracion,
   Presupuesto,
-  ProductoConRelaciones,
   SeccionApp,
 } from "@/lib/types";
 
@@ -20,10 +21,10 @@ type PresupuestosSectionProps = {
 
 export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
   const { toast } = useToast();
+  const { configuracion } = useConfiguracionAplicacion();
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [productos, setProductos] = useState<ProductoConRelaciones[]>([]);
-  const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
+  const [cargandoClientes, setCargandoClientes] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Presupuesto | null>(null);
   // El formulario permanece oculto hasta que se presione "Nuevo"
@@ -32,53 +33,51 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
   const formRef = useRef<HTMLDivElement>(null);
   const enfocarFormulario = useRef(false);
 
-  const cargarDatos = useCallback(async () => {
+  /*
+   * Carga perezosa: al entrar a la sección solo se piden los presupuestos
+   * (la tabla). Los clientes se piden al abrir el formulario y la
+   * configuración proviene del contexto global de la aplicación; los
+   * productos los busca el propio formulario bajo demanda (combobox).
+   */
+  const cargarPresupuestos = useCallback(async () => {
     setLoading(true);
     try {
-      const [presupuestosRes, clientesRes, productosRes, configuracionRes] =
-        await Promise.all([
-          fetch("/api/presupuestos", { cache: "no-store" }),
-          fetch("/api/clientes", { cache: "no-store" }),
-          fetch("/api/productos", { cache: "no-store" }),
-          fetch("/api/configuracion", { cache: "no-store" }),
-        ]);
-
-      if (
-        !presupuestosRes.ok ||
-        !clientesRes.ok ||
-        !productosRes.ok ||
-        !configuracionRes.ok
-      ) {
-        throw new Error("respuesta no válida");
-      }
-
-      const [presupuestosData, clientesData, productosData, configuracionData] =
-        await Promise.all([
-          presupuestosRes.json(),
-          clientesRes.json(),
-          productosRes.json(),
-          configuracionRes.json(),
-        ]);
-
-      setPresupuestos(Array.isArray(presupuestosData) ? presupuestosData : []);
-      setClientes(Array.isArray(clientesData) ? clientesData : []);
-      setProductos(Array.isArray(productosData) ? productosData : []);
-      setConfiguracion(configuracionData ?? null);
+      const response = await fetch("/api/presupuestos", { cache: "no-store" });
+      if (!response.ok) throw new Error("respuesta no válida");
+      const data = await response.json();
+      setPresupuestos(Array.isArray(data) ? data : []);
     } catch {
       toast({
         variant: "destructive",
         title: "Error al cargar",
-        description:
-          "No fue posible obtener los presupuestos, clientes y productos.",
+        description: "No fue posible obtener los presupuestos.",
       });
     } finally {
       setLoading(false);
     }
   }, [toast]);
 
+  const cargarClientes = useCallback(async () => {
+    setCargandoClientes(true);
+    try {
+      const response = await fetch("/api/clientes", { cache: "no-store" });
+      if (!response.ok) throw new Error("respuesta no válida");
+      const data = await response.json();
+      setClientes(Array.isArray(data) ? data : []);
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error al cargar",
+        description: "No fue posible obtener la lista de clientes.",
+      });
+    } finally {
+      setCargandoClientes(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
-    cargarDatos();
-  }, [cargarDatos]);
+    cargarPresupuestos();
+  }, [cargarPresupuestos]);
 
   // Una vez montado el formulario, desplazar la vista hacia él.
   useEffect(() => {
@@ -91,6 +90,9 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
   function abrirFormulario() {
     enfocarFormulario.current = true;
     setFormVisible(true);
+    // El selector de clientes necesita el catálogo: se pide al abrir el
+    // formulario (y se refresca en cada apertura para ver altas recientes).
+    cargarClientes();
   }
 
   function handleNuevo() {
@@ -106,7 +108,7 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
   function handleSaved() {
     setEditing(null);
     setFormVisible(false);
-    cargarDatos();
+    cargarPresupuestos();
   }
 
   function handleCancelEdit() {
@@ -145,8 +147,7 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
               onSaved={handleSaved}
               onCancelEdit={handleCancelEdit}
               clientes={clientes}
-              productos={productos}
-              cargandoCatalogos={loading}
+              cargandoCatalogos={cargandoClientes || loading}
               onIrA={onIrA}
             />
           </div>
@@ -158,7 +159,7 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
           editing={editing}
           configuracion={configuracion}
           onEdit={handleEdit}
-          onChanged={cargarDatos}
+          onChanged={cargarPresupuestos}
         />
       </div>
     </div>

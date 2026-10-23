@@ -420,3 +420,25 @@ Work Log:
 
 Stage Summary:
 - El menú lateral y el menú móvil ahora listan Productos inmediatamente después de Clientes (prioridad de acceso al catálogo de 699 productos); la navegación por id no requirió otros cambios y la sección sigue funcionando igual.
+---
+Task ID: 39
+Agent: main (Z.ai)
+Task: Acelerar la carga de los selects y de la aplicación en general.
+
+Work Log:
+- Diagnóstico (curl + performance API): /api/productos = 551 KB (699 productos con createdAt/updatedAt y relaciones completas con sus propias marcas de tiempo); el formulario de presupuestos cargaba TODO el catálogo al abrir la sección aunque solo fuera a mostrar la tabla (4 peticiones ~600 KB); el selector de productos era un Select de Radix que montaba 699 SelectItems en el DOM (apertura lenta, riesgo en móvil); /api/configuracion = 40 KB (3 copias del logo base64) y se pedía 2 veces (contexto de arranque + sección presupuestos). Next dev no comprime gzip, así que el peso viaja completo por la red.
+- API /api/productos GET: payload LIGERO (select explícito: sin createdAt/updatedAt; unidad {id,unidad}, categoria {id,categoria}, iva {id,tasa}) → 551 KB → 334 KB (−39 %). La grid y el form de productos usan exactamente esos campos (verificado).
+- NUEVO modo combobox: GET /api/productos?vista=combobox&busqueda=texto&limite=30 (máx 100) devuelve formato plano {id, descripcion, codigoSat, subtotal, unidad, tasa} filtrado por descripción (LIKE de SQLite, insensible a mayúsculas para ASCII) → 4.7 KB por consulta (−99 %).
+- API /api/configuracion GET ?basico=1: solo {id, nombreComercial, logo, colorPrimario} → 40 KB → 13 KB (−67 %). El contexto global de apariencia (configuracion-aplicacion) ahora pide la versión básica al arrancar.
+- PresupuestosSection: carga perezosa — al entrar solo /api/presupuestos (8 KB, antes ~600 KB en 4 peticiones); clientes se piden al abrir el formulario; configuracion proviene del contexto global (sin segunda petición); los productos los maneja el propio formulario.
+- PresupuestoForm: el Select de 699 ítems se reemplazó por combobox buscable (Popover + Command de cmdk, shouldFilter=false) con búsqueda en el servidor y debounce de 250 ms; el DOM renderiza máx. 30 opciones con precio e IVA por ítem; el producto elegido se conserva en estado (franja Cód. SAT/Unidad/Precio/IVA intacta); estados de carga ("Buscando…"), "Sin resultados para «X»" y aviso de catálogo vacío solo cuando corresponde (aparecía por error al abrir el form: corregido condicionándolo a selectorAbierto).
+- Tipos: ProductoCombobox en lib/types.ts.
+- BUG introducido y corregido durante la verificación: al renombrar cargarDatos→cargarPresupuestos quedó una referencia vieja en onChanged de PresupuestosTable (ReferenceError al entrar a la sección) → corregido y re-verificado.
+- Verificación E2E (agent-browser, escritorio 1440×900 + móvil 390×844): entrar a Presupuestos = 1 petición 8 KB/19 ms; abrir form = /api/clientes 8 KB; combobox abre con 30 ítems (no 699); buscar "PAPEL BOND CARTA" → 1 resultado ($321.10 · IVA 8%), "ADHESIVO" → 6, "CAJA" → 13; seleccionar muestra la franja congelada (SAT 24101702, MILLAR, $321.10, 8%); agregar partida → totales correctos ($346.79); guardar → "Presupuesto registrado $346.79" (servidor recalcula y coincide) → presupuesto de prueba ELIMINADO (BD final: los 2 originales); editar producto carga todos los campos con el payload ligero; móvil sin overflow (390px). Lint limpio. Arranque de app: me + configuración básica + clientes = ~22 KB en total.
+- Capturas: download/optimizacion-combobox-busqueda-escritorio.png, optimizacion-combobox-movil.png.
+- Nota preexistente (fuera de alcance): al editar un registro, los Select muestran el placeholder aunque el valor interno sea correcto (Radix no resuelve el texto del ítem con contenido no montado); comprobado que ocurre también en flujos no tocados (cliente en presupuestos) y que el guardado usa el estado correcto.
+
+Stage Summary:
+- La app arranca y navega mucho más ligera: Presupuestos pasa de ~600 KB a 8 KB al entrar; el catálogo completo baja de 551 a 334 KB; la configuración de arranque de 40 a 13 KB.
+- El selector de productos del presupuesto abre al instante y busca en el servidor (30 resultados con precio/IVA), eliminando el cuello de botella de renderizar 699 opciones; el flujo completo de captura, guardado y recálculo del servidor quedó verificado.
+- Pendiente conocido: placeholder cosmético en Selects al editar (preexistente), y opcionalmente aplicar el mismo combobox buscable al selector de clientes (~140 registros, hoy aceptable).

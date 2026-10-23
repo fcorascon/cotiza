@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ChevronsUpDown,
   Loader2,
   Pencil,
   Plus,
@@ -29,6 +30,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Table,
   TableBody,
   TableCell,
@@ -46,7 +60,7 @@ import { formatearMoneda } from "@/lib/productos-utils";
 import type {
   Cliente,
   Presupuesto,
-  ProductoConRelaciones,
+  ProductoCombobox,
   SeccionApp,
 } from "@/lib/types";
 
@@ -55,7 +69,6 @@ type PresupuestoFormProps = {
   onSaved: () => void;
   onCancelEdit: () => void;
   clientes: Cliente[];
-  productos: ProductoConRelaciones[];
   cargandoCatalogos: boolean;
   onIrA: (seccion: SeccionApp) => void;
 };
@@ -132,7 +145,6 @@ export function PresupuestoForm({
   onSaved,
   onCancelEdit,
   clientes,
-  productos,
   cargandoCatalogos,
   onIrA,
 }: PresupuestoFormProps) {
@@ -145,8 +157,16 @@ export function PresupuestoForm({
   const [fecha, setFecha] = useState(fechaHoyISO);
   const [observaciones, setObservaciones] = useState("");
 
-  // Selector de productos
-  const [productoSeleccionado, setProductoSeleccionado] = useState("");
+  // Selector de productos (combobox con búsqueda en el servidor)
+  const [selectorAbierto, setSelectorAbierto] = useState(false);
+  const [busquedaProducto, setBusquedaProducto] = useState("");
+  const [resultadosProducto, setResultadosProducto] = useState<
+    ProductoCombobox[]
+  >([]);
+  const [buscandoProducto, setBuscandoProducto] = useState(false);
+  const [productoElegido, setProductoElegido] = useState<ProductoCombobox | null>(
+    null
+  );
   const [cantidadNueva, setCantidadNueva] = useState("1");
   const [errorCantidadNueva, setErrorCantidadNueva] = useState<string | null>(
     null
@@ -174,16 +194,52 @@ export function PresupuestoForm({
           ivaTasa: item.ivaTasa,
         }))
       );
-      setProductoSeleccionado("");
+      setProductoElegido(null);
       setCantidadNueva("1");
       setErrores({});
       setErrorCantidadNueva(null);
     }
   }, [editing]);
 
-  const productoEnCatalogo = productos.find(
-    (p) => p.id === productoSeleccionado
-  );
+  /*
+   * Búsqueda de productos en el servidor con debounce: al abrir el
+   * selector se muestran los primeros 30 del catálogo y al escribir se
+   * consulta /api/productos?vista=combobox (250 ms de pausa). Así el DOM
+   * nunca renderiza las 699 filas del catálogo completo.
+   */
+  useEffect(() => {
+    if (!selectorAbierto) return;
+    let vigente = true;
+    const texto = busquedaProducto.trim();
+    const temporizador = setTimeout(
+      async () => {
+        setBuscandoProducto(true);
+        try {
+          const params = new URLSearchParams({
+            vista: "combobox",
+            limite: "30",
+          });
+          if (texto) params.set("busqueda", texto);
+          const respuesta = await fetch(`/api/productos?${params.toString()}`, {
+            cache: "no-store",
+          });
+          const datos = await respuesta.json();
+          if (vigente && respuesta.ok) {
+            setResultadosProducto(Array.isArray(datos) ? datos : []);
+          }
+        } catch {
+          if (vigente) setResultadosProducto([]);
+        } finally {
+          if (vigente) setBuscandoProducto(false);
+        }
+      },
+      texto ? 250 : 0
+    );
+    return () => {
+      vigente = false;
+      clearTimeout(temporizador);
+    };
+  }, [busquedaProducto, selectorAbierto]);
 
   // Totales en vivo: sub total + IVA (por tasa) + total.
   const totales = useMemo(
@@ -209,7 +265,8 @@ export function PresupuestoForm({
     setFecha(fechaHoyISO());
     setObservaciones("");
     setItems([]);
-    setProductoSeleccionado("");
+    setProductoElegido(null);
+    setBusquedaProducto("");
     setCantidadNueva("1");
     setErrores({});
     setErrorCantidadNueva(null);
@@ -221,7 +278,7 @@ export function PresupuestoForm({
   }
 
   function agregarProducto() {
-    if (!productoEnCatalogo) return;
+    if (!productoElegido) return;
     const cantidad = cantidadANumero(cantidadNueva);
     if (!Number.isFinite(cantidad) || cantidad <= 0) {
       setErrorCantidadNueva("Ingrese una cantidad mayor a 0");
@@ -232,16 +289,17 @@ export function PresupuestoForm({
       ...previo,
       {
         clave: nuevaClave(),
-        productoId: productoEnCatalogo.id,
-        descripcion: productoEnCatalogo.descripcion,
-        codigoSat: productoEnCatalogo.codigoSat,
-        unidad: productoEnCatalogo.unidad.unidad,
+        productoId: productoElegido.id,
+        descripcion: productoElegido.descripcion,
+        codigoSat: productoElegido.codigoSat,
+        unidad: productoElegido.unidad,
         cantidadTexto: String(cantidad),
-        precioUnitario: productoEnCatalogo.subtotal,
-        ivaTasa: productoEnCatalogo.iva.tasa,
+        precioUnitario: productoElegido.subtotal,
+        ivaTasa: productoElegido.tasa,
       },
     ]);
-    setProductoSeleccionado("");
+    setProductoElegido(null);
+    setBusquedaProducto("");
     setCantidadNueva("1");
     setErrores((previo) => ({ ...previo, items: undefined }));
   }
@@ -452,38 +510,100 @@ export function PresupuestoForm({
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_120px_auto] sm:items-start">
               <div className="space-y-2">
                 <Label htmlFor="producto-presupuesto">Producto</Label>
-                <Select
-                  value={productoSeleccionado}
-                  onValueChange={(valor) => {
-                    setProductoSeleccionado(valor);
-                    setErrorCantidadNueva(null);
+                <Popover
+                  open={selectorAbierto}
+                  onOpenChange={(abierto) => {
+                    setSelectorAbierto(abierto);
+                    if (abierto) {
+                      // Al abrir se muestra el inicio del catálogo.
+                      setBusquedaProducto("");
+                    }
                   }}
                 >
-                  <SelectTrigger id="producto-presupuesto">
-                    <SelectValue
-                      placeholder={
-                        cargandoCatalogos
-                          ? "Cargando productos…"
-                          : "Seleccione un producto"
-                      }
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="producto-presupuesto"
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={selectorAbierto}
+                      aria-label="Buscar y seleccionar producto"
+                      className="w-full justify-between font-normal"
+                    >
+                      <span className="min-w-0 truncate">
+                        {productoElegido
+                          ? productoElegido.descripcion
+                          : cargandoCatalogos
+                            ? "Cargando…"
+                            : "Seleccione o busque un producto"}
+                      </span>
+                      <ChevronsUpDown
+                        className="ml-2 h-4 w-4 shrink-0 opacity-50"
+                        aria-hidden="true"
+                      />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[--radix-popover-trigger-width] p-0"
+                    align="start"
+                  >
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Buscar por descripción…"
+                        value={busquedaProducto}
+                        onValueChange={setBusquedaProducto}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          {buscandoProducto
+                            ? "Buscando…"
+                            : busquedaProducto.trim()
+                              ? `Sin resultados para «${busquedaProducto.trim()}».`
+                              : "Sin productos en el catálogo."}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {resultadosProducto.map((producto) => (
+                            <CommandItem
+                              key={producto.id}
+                              value={producto.id}
+                              onSelect={() => {
+                                setProductoElegido(producto);
+                                setErrorCantidadNueva(null);
+                                setSelectorAbierto(false);
+                              }}
+                              className="gap-2"
+                            >
+                              <span className="min-w-0 flex-1 truncate">
+                                {producto.descripcion}
+                              </span>
+                              <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
+                                {formatearMoneda(producto.subtotal)} · IVA{" "}
+                                {producto.tasa}%
+                              </span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                        {buscandoProducto && resultadosProducto.length > 0 && (
+                          <div className="border-t px-3 py-2 text-xs text-muted-foreground">
+                            Buscando…
+                          </div>
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {!cargandoCatalogos &&
+                  selectorAbierto &&
+                  !buscandoProducto &&
+                  resultadosProducto.length === 0 &&
+                  !busquedaProducto.trim() && (
+                    <AvisoCatalogoVacio
+                      mensaje="Aún no hay productos en el catálogo."
+                      destino="productos"
+                      etiquetaBoton="Ir a Productos"
+                      onIrA={onIrA}
                     />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {productos.map((producto) => (
-                      <SelectItem key={producto.id} value={producto.id}>
-                        {producto.descripcion}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!cargandoCatalogos && productos.length === 0 && (
-                  <AvisoCatalogoVacio
-                    mensaje="Aún no hay productos en el catálogo."
-                    destino="productos"
-                    etiquetaBoton="Ir a Productos"
-                    onIrA={onIrA}
-                  />
-                )}
+                  )}
               </div>
 
               <div className="space-y-2">
@@ -509,7 +629,7 @@ export function PresupuestoForm({
                   type="button"
                   variant="secondary"
                   onClick={agregarProducto}
-                  disabled={!productoSeleccionado}
+                  disabled={!productoElegido}
                   className="w-full sm:w-auto"
                 >
                   <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -523,19 +643,19 @@ export function PresupuestoForm({
             )}
 
             {/* Datos del producto seleccionado (fotografía que se agregará) */}
-            {productoEnCatalogo && (
+            {productoElegido && (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                 <span className="font-mono" title="Código SAT">
-                  Cód. SAT: {productoEnCatalogo.codigoSat}
+                  Cód. SAT: {productoElegido.codigoSat}
                 </span>
-                <span>Unidad: {productoEnCatalogo.unidad.unidad}</span>
+                <span>Unidad: {productoElegido.unidad}</span>
                 <span className="tabular-nums">
                   Precio unitario:{" "}
                   <strong className="text-foreground">
-                    {formatearMoneda(productoEnCatalogo.subtotal)}
+                    {formatearMoneda(productoElegido.subtotal)}
                   </strong>
                 </span>
-                <span>IVA: {productoEnCatalogo.iva.tasa}%</span>
+                <span>IVA: {productoElegido.tasa}%</span>
               </div>
             )}
 

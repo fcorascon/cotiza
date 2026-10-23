@@ -36,13 +36,69 @@ async function validarRelaciones(data: {
 
 /**
  * GET /api/productos
- * Lista todos los productos con sus relaciones (unidad, categoría e IVA),
- * ordenados alfabéticamente por descripción.
+ * - Sin parámetros: lista completa en formato LIGERO para la grid y el
+ *   formulario de productos (sin marcas de tiempo; relaciones reducidas a
+ *   los campos que la interfaz muestra).
+ * - ?vista=combobox: formato compacto para el selector del presupuesto
+ *   (id, descripción, código SAT, subtotal, unidad y tasa), con búsqueda
+ *   opcional por descripción (?busqueda=texto) y tope de resultados
+ *   (?limite=30, máx. 100).
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+
+    if (searchParams.get("vista") === "combobox") {
+      const busqueda = (searchParams.get("busqueda") ?? "").trim();
+      const limiteSolicitado = Number(searchParams.get("limite") ?? 30);
+      const limite =
+        Number.isFinite(limiteSolicitado) && limiteSolicitado > 0
+          ? Math.min(Math.floor(limiteSolicitado), 100)
+          : 30;
+
+      const productos = await db.producto.findMany({
+        where: busqueda
+          ? { descripcion: { contains: busqueda } }
+          : undefined,
+        select: {
+          id: true,
+          descripcion: true,
+          codigoSat: true,
+          subtotal: true,
+          unidad: { select: { unidad: true } },
+          iva: { select: { tasa: true } },
+        },
+        orderBy: { descripcion: "asc" },
+        take: limite,
+      });
+
+      const compactos = productos.map((producto) => ({
+        id: producto.id,
+        descripcion: producto.descripcion,
+        codigoSat: producto.codigoSat,
+        subtotal: producto.subtotal,
+        unidad: producto.unidad.unidad,
+        tasa: producto.iva.tasa,
+      }));
+      return NextResponse.json(compactos);
+    }
+
     const productos = await db.producto.findMany({
-      include: INCLUYIR_RELACIONES,
+      select: {
+        id: true,
+        codigoSat: true,
+        descripcion: true,
+        unidadId: true,
+        categoriaId: true,
+        ivaId: true,
+        costo: true,
+        margen: true,
+        subtotal: true,
+        notas: true,
+        unidad: { select: { id: true, unidad: true } },
+        categoria: { select: { id: true, categoria: true } },
+        iva: { select: { id: true, tasa: true } },
+      },
       orderBy: { descripcion: "asc" },
     });
     return NextResponse.json(productos);
