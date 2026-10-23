@@ -363,3 +363,23 @@ Stage Summary:
 - Toda la aplicación quedó detrás de inicio de sesión: sin sesión válida se muestra la pantalla de acceso (logo/empresa del contexto de configuración); la sesión dura 7 días vía cookie firmada HttpOnly.
 - Gestión de usuarios (solo administradores): crear, editar, cambiar contraseña, activar/desactivar y eliminar, con protecciones anti-bloqueo (no autodesactivarse/autodesactivar el último admin). Los usuarios con rol "Usuario" entran a todo el uso operativo pero no ven el menú Usuarios.
 - Pendiente futuro (no solicitado aún): endurecer las demás APIs (/api/clientes, /api/presupuestos, etc.) con la misma verificación de sesión — hoy la puerta de entrada es la UI; el resto de rutas siguen abiertas para la red local.
+---
+Task ID: 36
+Agent: main (Z.ai)
+Task: Corregir el error "Error al cargar / No fue posible obtener la lista de usuarios" (reportado con captura).
+
+Work Log:
+- Diagnóstico: la API GET /api/usuarios funciona correctamente (login fcorascon → 200 con la lista; sin sesión → 401 correcto). El fallo del usuario ocurrió en un estado degradado: sesión ya no válida (401: expirada, cerrada en otra pestaña o rol cambiado) o falla temporal del servidor (500, p.ej. Prisma Client obsoleto tras db push con el servidor corriendo). El defecto real de la UI: cualquier fallo mostraba un toast genérico idéntico, la tabla caía en el estado vacío "Aún no hay usuarios registrados" (engañoso: sin usuarios ≠ carga fallida), no había botón de reintento y en el caso 401 el usuario quedaba atrapado en la vista sin regresar al login.
+- usuarios-section.tsx: nueva prop obligatoria onSesionExpirada; estado error (string|null). cargarUsuarios distingue ahora: 401 → toast "Sesión finalizada / Ingrese nuevamente para continuar." + onSesionExpirada() (vuelve a la pantalla de acceso); otros errores HTTP → mensaje específico del servidor (datos.error) o "El servidor respondió con error N"; fallo de red → "No fue posible conectar con el servidor."; el mensaje se muestra en el toast Y en un panel de error dentro de la tarjeta. Error se limpia en cada reintento.
+- usuarios-table.tsx: props nuevas error y onReintentar; nuevo estado de error (role=alert, icono AlertTriangle, mensaje detallado, botón "Reintentar") con prioridad sobre el estado vacío; descripción de tarjeta "No se pudo cargar la lista."; el botón refrescar usa onReintentar ?? onChanged.
+- page.tsx: pasa onSesionExpirada={() => setUsuario(null)} a UsuariosSection → un 401 regresa al login (el toast sigue visible desde el Toaster global).
+- Verificación E2E (agent-browser, simulando fallos con monkey-patch de fetch vía eval porque la API real no falla):
+  · Escritorio 1440×900: login → Usuarios carga fcorascon/ADMIN/Activo (captura carga-ok). fetch→500 {error:"Error al obtener los usuarios"} → toast con el mensaje específico del servidor + panel de error con Reintentar (captura error-reintentar); restaurado fetch y pulsado Reintentar → lista recargada sin recargar la página. fetch→401 → toast "Sesión finalizada" + regreso automático a la pantalla de acceso (captura sesion-expirada).
+  · Móvil 390×844: Usuarios carga OK sin overflow horizontal (scrollWidth 390); fetch→401 → mismo resultado: toast + login (capturas móvil).
+  · Consola sin errores ni errores de página. Lint limpio. App dejada en estado operable (fetch restaurado, sesión válida).
+- Capturas: download/correccion-usuarios-carga-ok-escritorio.png, correccion-usuarios-error-reintentar-escritorio.png, correccion-usuarios-sesion-expirada-escritorio.png, correccion-usuarios-carga-ok-movil.png, correccion-usuarios-sesion-expirada-movil.png.
+
+Stage Summary:
+- La sección Usuarios ya no muere en silencio: si la sesión dejó de ser válida, la app regresa sola a la pantalla de acceso con aviso claro; si es un fallo del servidor o de red, se muestra el motivo exacto con botón Reintentar en lugar del falso estado "sin usuarios".
+- Los mensajes de error ahora reflejan la causa real (401 sesión, 500 del servidor, red caída), lo que facilita soporte remoto.
+- Nota operativa: si tras un `db push` con el dev server corriendo aparecen 500 en las rutas nuevas, reiniciar el servidor regenera el Prisma Client (ya documentado en Task 35).

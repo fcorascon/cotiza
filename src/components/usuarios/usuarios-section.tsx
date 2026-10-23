@@ -10,12 +10,18 @@ import type { SesionActiva, Usuario } from "@/lib/types";
 
 type UsuariosSectionProps = {
   usuarioActual: SesionActiva;
+  /** Se invoca cuando la API responde 401: la sesión ya no es válida. */
+  onSesionExpirada: () => void;
 };
 
-export function UsuariosSection({ usuarioActual }: UsuariosSectionProps) {
+export function UsuariosSection({
+  usuarioActual,
+  onSesionExpirada,
+}: UsuariosSectionProps) {
   const { toast } = useToast();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Usuario | null>(null);
   // El formulario permanece oculto hasta que se presione "Nuevo"
   // o se edite un registro; al inicio solo se muestra la tabla.
@@ -25,21 +31,45 @@ export function UsuariosSection({ usuarioActual }: UsuariosSectionProps) {
 
   const cargarUsuarios = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch("/api/usuarios", { cache: "no-store" });
-      if (!response.ok) throw new Error("respuesta no válida");
+
+      if (response.status === 401) {
+        // La sesión expiró, se cerró en otra pestaña o la cuenta dejó
+        // de ser administrador: se regresa a la pantalla de acceso.
+        toast({
+          title: "Sesión finalizada",
+          description: "Ingrese nuevamente para continuar.",
+        });
+        onSesionExpirada();
+        return;
+      }
+
+      if (!response.ok) {
+        const datos = await response.json().catch(() => ({}));
+        throw new Error(
+          datos?.error ?? `El servidor respondió con error ${response.status}.`
+        );
+      }
+
       const data = await response.json();
       setUsuarios(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (err) {
+      const mensaje =
+        err instanceof Error && err.message
+          ? err.message
+          : "No fue posible conectar con el servidor.";
+      setError(mensaje);
       toast({
         variant: "destructive",
         title: "Error al cargar",
-        description: "No fue posible obtener la lista de usuarios.",
+        description: mensaje,
       });
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, onSesionExpirada]);
 
   useEffect(() => {
     cargarUsuarios();
@@ -123,6 +153,8 @@ export function UsuariosSection({ usuarioActual }: UsuariosSectionProps) {
           <UsuariosTable
             usuarios={usuarios}
             loading={loading}
+            error={error}
+            onReintentar={cargarUsuarios}
             editing={editing}
             usuarioActual={usuarioActual}
             onEdit={handleEdit}

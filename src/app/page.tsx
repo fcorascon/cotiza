@@ -81,7 +81,10 @@ export default function Page() {
       ) : seccion === "productos" ? (
         <ProductosSection onIrA={setSeccion} />
       ) : seccion === "usuarios" ? (
-        <UsuariosSection usuarioActual={usuario} />
+        <UsuariosSection
+          usuarioActual={usuario}
+          onSesionExpirada={() => setUsuario(null)}
+        />
       ) : (
         <ConfiguracionSection />
       )}

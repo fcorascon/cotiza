@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
+  AlertTriangle,
   Loader2,
   Pencil,
   RefreshCw,
@@ -52,6 +53,9 @@ import type { SesionActiva, Usuario } from "@/lib/types";
 type UsuariosTableProps = {
   usuarios: Usuario[];
   loading: boolean;
+  /** Mensaje de error de la última carga; si existe se muestra con opción de reintentar. */
+  error?: string | null;
+  onReintentar?: () => void;
   editing: Usuario | null;
   usuarioActual: SesionActiva;
   onEdit: (usuario: Usuario) => void;
@@ -69,6 +73,8 @@ function formatearFecha(iso: string) {
 export function UsuariosTable({
   usuarios,
   loading,
+  error,
+  onReintentar,
   editing,
   usuarioActual,
   onEdit,
@@ -131,15 +137,17 @@ export function UsuariosTable({
             <CardDescription>
               {loading
                 ? "Cargando información…"
-                : `${usuarios.length} ${
-                    usuarios.length === 1 ? "usuario" : "usuarios"
-                  } en total · ${filtrados.length} mostrados`}
+                : error
+                  ? "No se pudo cargar la lista."
+                  : `${usuarios.length} ${
+                      usuarios.length === 1 ? "usuario" : "usuarios"
+                    } en total · ${filtrados.length} mostrados`}
             </CardDescription>
           </div>
           <Button
             variant="outline"
             size="icon"
-            onClick={onChanged}
+            onClick={onReintentar ?? onChanged}
             disabled={loading}
             aria-label="Actualizar lista de usuarios"
           >
@@ -182,6 +190,31 @@ export function UsuariosTable({
                 <Skeleton className="h-8 w-20" />
               </div>
             ))}
+          </div>
+        ) : error ? (
+          <div
+            className="flex flex-col items-center justify-center rounded-lg border border-dashed border-destructive/40 bg-destructive/5 py-14 text-center"
+            role="alert"
+          >
+            <AlertTriangle
+              className="mb-3 h-10 w-10 text-destructive/70"
+              aria-hidden="true"
+            />
+            <p className="font-medium">No fue posible obtener la lista de usuarios</p>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              {error} Verifique su conexión e intente nuevamente.
+            </p>
+            {onReintentar && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={onReintentar}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+                Reintentar
+              </Button>
+            )}
           </div>
         ) : usuarios.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-14 text-center">
