@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { formatearMoneda } from "@/lib/productos-utils";
 import type { ProductoConRelaciones } from "@/lib/types";
 
@@ -205,32 +206,121 @@ export function ProductosTable({
           </div>
         ) : (
           <TooltipProvider delayDuration={200}>
+            {/* Móvil (<sm): tarjetas con el nombre completo sin recortes,
+                mismo patrón que la grid de presupuestos. */}
+            <div className="space-y-3 sm:hidden">
+              {filtradas.map((producto) => {
+                const esSeleccionado = editing?.id === producto.id;
+                return (
+                  <div
+                    key={producto.id}
+                    className={cn(
+                      "rounded-lg border p-3",
+                      esSeleccionado && "border-accent bg-accent/60"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start gap-1.5">
+                          <p className="min-w-0 flex-1 whitespace-normal break-words font-medium leading-snug">
+                            {producto.descripcion}
+                          </p>
+                          {producto.notas && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <StickyNote
+                                  className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                                  aria-label="Este producto tiene notas"
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-64">
+                                <span className="whitespace-pre-wrap">
+                                  {producto.notas}
+                                </span>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                        <p className="truncate font-mono text-xs text-muted-foreground">
+                          {producto.codigoSat}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {producto.categoria.categoria} ·{" "}
+                          {producto.unidad.unidad} · IVA {producto.iva.tasa}%
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => onEdit(producto)}
+                              aria-label={`Editar producto ${producto.descripcion}`}
+                            >
+                              <Pencil className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Editar</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => setPorEliminar(producto)}
+                              aria-label={`Eliminar producto ${producto.descripcion}`}
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Eliminar</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-end justify-between gap-2 border-t pt-2">
+                      <p className="text-xs tabular-nums text-muted-foreground">
+                        Costo {formatearMoneda(producto.costo)} · Margen{" "}
+                        {producto.margen}%
+                      </p>
+                      <p className="text-sm font-semibold tabular-nums">
+                        {formatearMoneda(producto.subtotal)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Escritorio (sm+): tabla con encabezado fijo. */}
             {/* overflow-x-visible en el contenedor de la tabla: evita que sea un
                 scroll context y permite que el thead sticky se ancle al viewport
                 del ScrollArea (la tabla es table-fixed y nunca desborda en X). */}
-            <ScrollArea className="max-h-[560px] pr-3 [&_[data-slot=table-container]]:overflow-x-visible">
+            <ScrollArea className="hidden max-h-[560px] pr-3 sm:block [&_[data-slot=table-container]]:overflow-x-visible">
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
-                    <TableHead className="w-[48%] sm:w-[22%]">
+                    <TableHead className="w-[34%]">
                       Descripción
                     </TableHead>
-                    <TableHead className="hidden w-[14%] sm:table-cell">
+                    <TableHead className="hidden w-[15%] sm:table-cell">
                       Categoría
                     </TableHead>
-                    <TableHead className="hidden w-[9%] lg:table-cell">
+                    <TableHead className="hidden w-[8%] lg:table-cell">
                       Unidad
                     </TableHead>
-                    <TableHead className="hidden w-[6%] px-2 sm:table-cell">
+                    <TableHead className="hidden w-[5%] px-2 sm:table-cell">
                       IVA
                     </TableHead>
-                    <TableHead className="hidden w-[13%] whitespace-nowrap px-2 text-right sm:table-cell">
+                    <TableHead className="hidden w-[9%] whitespace-nowrap px-2 text-right sm:table-cell">
                       Costo
                     </TableHead>
-                    <TableHead className="hidden w-[10%] whitespace-nowrap px-2 text-right md:table-cell">
+                    <TableHead className="hidden w-[8%] whitespace-nowrap px-2 text-right md:table-cell">
                       Margen
                     </TableHead>
-                    <TableHead className="w-[42%] whitespace-nowrap px-2 text-right sm:w-[14%]">
+                    <TableHead className="w-[12%] whitespace-nowrap px-2 text-right">
                       Subtotal
                     </TableHead>
                     <TableHead className="w-[90px] text-right">
@@ -249,7 +339,7 @@ export function ProductosTable({
                         <TableCell className="align-top">
                           <div className="flex items-start gap-1.5">
                             <span
-                              className="truncate font-medium"
+                              className="line-clamp-3 break-words whitespace-normal font-medium"
                               title={producto.descripcion}
                             >
                               {producto.descripcion}
@@ -275,9 +365,6 @@ export function ProductosTable({
                             title={`Código SAT: ${producto.codigoSat}`}
                           >
                             {producto.codigoSat}
-                          </p>
-                          <p className="truncate text-xs tabular-nums text-muted-foreground sm:hidden">
-                            Costo: {formatearMoneda(producto.costo)}
                           </p>
                         </TableCell>
 

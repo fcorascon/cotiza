@@ -466,3 +466,23 @@ Stage Summary:
 - Cada intento queda registrado en la bitácora "Ver envíos" de Configuración (estado ENVIADO/ERROR con causa legible), y el SMTP se configura en la misma sección; sin SMTP completo el botón responde con instrucción clara en lugar de fallar en silencio.
 - Las llamadas de envío, bitácora y prueba SMTP ahora incluyen el respaldo de sesión x-sesion (navegadores que bloquean cookies).
 - Envío real verificado de extremo a extremo (SMTP mail.suncatcher.com.mx:465 SSL): mensaje aceptado con messageId y registrado.
+---
+Task ID: 41
+Agent: main (Z.ai)
+Task: Ajustar las columnas de la grid de Productos para que se lea el nombre completo del producto (reportado con captura: descripciones truncadas "ADHESIVO BARRA AVERY 7.5 …", "AEROSOL DESINFECTANTE LYS…").
+
+Work Log:
+- Diagnóstico (captura del usuario + medición): la columna Descripción ocupaba 22% (~250px) con `truncate` → 699 nombres recortados con "…"; las columnas numéricas (Costo 13%, Margen 10%, Subtotal 14%) desperdiciaban espacio y la Categoría (14%) también truncaba ("ARTÍCULOS DE OFI…").
+- Fix escritorio (productos-table.tsx): rebalanceo de anchos — Descripción 22%→34% (~375px), Categoría 14%→15%, Unidad 9%→8%, IVA 6%→5%, Costo 13%→9%, Margen 10%→8%, Subtotal 14%→12% (los montos caben sobrado). El nombre pasa de `truncate` a `line-clamp-3 break-words whitespace-normal` (hasta 3 líneas con elipses, tooltip title conservado): garantiza el nombre completo para todo el catálogo (el más largo tiene 90 caracteres y ocupa 3 líneas exactas).
+- BUG encontrado durante la verificación: el clamp no surtía efecto porque `white-space: nowrap` de TableCell (ui/table.tsx:86, regla global del proyecto) se heredaba al span → el texto ni siquiera envolvía y quedaba recortado en silencio (peor que antes). Corregido con `whitespace-normal` explícito en el span del nombre.
+- Fix móvil (<sm): la tabla de 3 columnas (Descripción+Subtotal+Acciones) deja solo ~95px al nombre → 477/699 nombres seguían truncados incluso a 3 líneas (el más largo necesitaba 9). Se reemplaza la tabla por TARJETAS en móvil (mismo patrón que presupuestos-table, Task 7): nombre completo sin restricción de ancho (break-words, sin clamp), código SAT, línea CATEGORÍA · UNIDAD · IVA x%, pie Costo · Margen + Subtotal destacado, botones editar/eliminar arriba a la derecha, resaltado del producto en edición. La tabla queda `hidden sm:block` (solo escritorio, conservando thead sticky); se eliminó la línea sm:hidden "Costo:" que quedaba muerta dentro de la celda.
+- Verificación E2E (agent-browser, fcorascon):
+  · Escritorio 1440×900: tabla visible, tarjetas ocultas, 699/699 nombres COMPLETAMENTE visibles (0 recortados; distribución 462 a 1 línea, 236 a 2, 1 a 3); búsqueda del nombre más largo (QUITA-CRET… 90 chars) → 3 líneas sin recorte; la fila "AGENDA FORTEC EJECUTIVA 2025 DIARIO NEGRO" envuelve a 2 líneas completa.
+  · Móvil 390×844: tabla oculta, 699 tarjetas visibles, 699/699 nombres completos (0 recortados), sin overflow horizontal (scrollWidth 390 = clientWidth); encabezados/búsqueda/estados vacíos compartidos intactos.
+  · Consola y errores de página limpios; bun run lint sin errores.
+- Capturas: download/productos-nombres-completos-escritorio.png, productos-tarjetas-movil.png.
+
+Stage Summary:
+- El nombre de todos los 699 productos se lee completo: en escritorio la columna Descripción creció de 22% a 34% y permite hasta 3 líneas; en móvil la tabla se sustituyó por tarjetas (patrón ya usado en Presupuestos) donde el nombre nunca se recorta.
+- La causa raíz del clamp inefectivo (whitespace-nowrap heredado de TableCell) quedó documentada: cualquier truncado-multilínea futuro en tablas necesita whitespace-normal explícito.
+- La Categoría sigue truncando en escritorio con tooltip title (fuera del alcance solicitado; darle más ancho restaría espacio al nombre).
