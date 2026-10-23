@@ -14,6 +14,10 @@ import {
   PantallaLogin,
   PantallaVerificando,
 } from "@/components/auth/pantalla-login";
+import {
+  cabeceraSesion,
+  limpiarTokenSesion,
+} from "@/lib/sesion-cliente";
 import type { SesionActiva, SeccionApp } from "@/lib/types";
 
 export default function Page() {
@@ -26,11 +30,18 @@ export default function Page() {
     let activo = true;
     (async () => {
       try {
-        const respuesta = await fetch("/api/auth/me", { cache: "no-store" });
+        const respuesta = await fetch("/api/auth/me", {
+          cache: "no-store",
+          headers: cabeceraSesion(),
+        });
         if (!activo) return;
         if (respuesta.ok) {
           const datos = await respuesta.json();
           setUsuario((datos?.usuario as SesionActiva) ?? null);
+        } else {
+          // Sin sesión válida: se descarta cualquier token de respaldo.
+          limpiarTokenSesion();
+          setUsuario(null);
         }
       } catch {
         if (activo) setUsuario(null);
@@ -45,10 +56,14 @@ export default function Page() {
 
   async function cerrarSesion() {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: cabeceraSesion(),
+      });
     } catch {
       // Aunque falle la petición, la sesión local se cierra igualmente.
     }
+    limpiarTokenSesion();
     setUsuario(null);
     setSeccion("clientes");
   }

@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { cabeceraSesion } from "@/lib/sesion-cliente";
 import { ETIQUETA_ROL } from "@/components/usuarios/usuario-form";
 import type { SesionActiva, Usuario } from "@/lib/types";
 
@@ -101,6 +102,7 @@ export function UsuariosTable({
     try {
       const respuesta = await fetch(`/api/usuarios/${porEliminar.id}`, {
         method: "DELETE",
+        headers: cabeceraSesion(),
       });
       if (!respuesta.ok) {
         const datos = await respuesta.json().catch(() => ({}));

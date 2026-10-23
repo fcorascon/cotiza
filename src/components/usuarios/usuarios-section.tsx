@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { UsuarioForm } from "@/components/usuarios/usuario-form";
 import { UsuariosTable } from "@/components/usuarios/usuarios-table";
 import { useToast } from "@/hooks/use-toast";
+import { cabeceraSesion } from "@/lib/sesion-cliente";
 import type { SesionActiva, Usuario } from "@/lib/types";
 
 type UsuariosSectionProps = {
@@ -33,7 +34,10 @@ export function UsuariosSection({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/usuarios", { cache: "no-store" });
+      const response = await fetch("/api/usuarios", {
+        cache: "no-store",
+        headers: cabeceraSesion(),
+      });
 
       if (response.status === 401) {
         // La sesión expiró, se cerró en otra pestaña o la cuenta dejó

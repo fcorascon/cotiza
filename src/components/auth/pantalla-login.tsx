@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useConfiguracionAplicacion } from "@/components/configuracion-aplicacion";
+import { guardarTokenSesion } from "@/lib/sesion-cliente";
 import type { SesionActiva } from "@/lib/types";
 
 type PantallaLoginProps = {
@@ -63,6 +64,12 @@ export function PantallaLogin({ onIniciarSesion }: PantallaLoginProps) {
       if (!respuesta.ok) {
         setError(datos?.error ?? "No fue posible iniciar sesión");
         return;
+      }
+
+      // Respaldo para navegadores que bloquean cookies: el token se guarda
+      // en localStorage y se enviará por el encabezado "x-sesion".
+      if (typeof datos?.token === "string") {
+        guardarTokenSesion(datos.token);
       }
 
       onIniciarSesion(datos.usuario as SesionActiva);

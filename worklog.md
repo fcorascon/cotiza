@@ -383,3 +383,27 @@ Stage Summary:
 - La sección Usuarios ya no muere en silencio: si la sesión dejó de ser válida, la app regresa sola a la pantalla de acceso con aviso claro; si es un fallo del servidor o de red, se muestra el motivo exacto con botón Reintentar en lugar del falso estado "sin usuarios".
 - Los mensajes de error ahora reflejan la causa real (401 sesión, 500 del servidor, red caída), lo que facilita soporte remoto.
 - Nota operativa: si tras un `db push` con el dev server corriendo aparecen 500 en las rutas nuevas, reiniciar el servidor regenera el Prisma Client (ya documentado en Task 35).
+---
+Task ID: 37
+Agent: main (Z.ai)
+Task: Corregir "siempre finaliza la sesión y se regresa a ingresar las credenciales" (reportado tras Task 36).
+
+Work Log:
+- Diagnóstico: el mecanismo de sesión del servidor está sano (verificado en navegador: login → cookie sn_sesion presente → recarga → sesión persiste; un solo proceso next-server; AUTH_SECRET usa el fallback constante, no hay regeneración). La causa real del bucle de login: el navegador del usuario no guarda ni envía la cookie de sesión. Escenario típico: la app corre embebida en un iframe (vista previa) donde los navegadores actuales bloquean cookies de terceros, o modo incógnito/ajustes estrictos. En ese contexto el POST /login responde 200 pero el Set-Cookie se descarta → el siguiente llamado autenticado (/api/usuarios) o la recarga (/api/auth/me) llega sin cookie → 401 → "Sesión finalizada" → login, en bucle infinito. Antes de Task 36 el usuario veía solo el toast "Error al cargar" en Usuarios; ambos reportes comparten esta raíz.
+- Solución (respaldo de sesión cookie + encabezado):
+  · src/lib/auth.ts: obtenerSesionRequest acepta el token de la cookie O del encabezado "x-sesion" (mismo token firmado HMAC; misma verificación).
+  · src/lib/sesion-cliente.ts (nuevo): helpers de cliente — guardarTokenSesion / obtenerTokenSesion / limpiarTokenSesion / cabeceraSesion() con try-catch (degrada a solo-cookie si localStorage está bloqueado).
+  · api/auth/login: la respuesta incluye ahora `token` en el cuerpo (además de la cookie) como respaldo.
+  · pantalla-login.tsx: al iniciar sesión guarda el token en localStorage.
+  · page.tsx: /api/auth/me y /api/auth/logout envían cabeceraSesion(); en 401 de me se limpia el token; cerrarSesion limpia el token.
+  · usuarios-section / usuario-form / usuarios-table: todas las llamadas a /api/usuarios (GET/POST/PUT/DELETE) incluyen cabeceraSesion().
+- Verificación E2E (agent-browser):
+  · Escritorio: login → token visible en localStorage → **cookies borradas manualmente + recarga → la app se restaura sin pedir credenciales (antes: login forzado)** → Usuarios carga la lista → crear "prueba.sesion" (POST 201 vía encabezado) → eliminarlo (DELETE OK, BD final solo fcorascon) → Cerrar sesión limpia el token y vuelve al login.
+  · Móvil 390×844: login → cookies borradas + recarga → sesión sobrevive → Usuarios carga sin "Sesión finalizada", sin overflow (scrollWidth 390). Sin errores de consola ni de página. Lint limpio.
+  · Capturas: download/correccion-sesion-sin-cookie-usuarios-escritorio.png, correccion-sesion-sin-cookie-movil.png.
+- Nota de seguridad aceptada: el token en localStorage es legible por JS (mitigado: app de red local, mismas condiciones que el diseño previo; la cookie HttpOnly sigue siendo la vía principal cuando el navegador la admite).
+
+Stage Summary:
+- La sesión ya no depende exclusivamente de la cookie: si el navegador la bloquea o la descarta (app embebida/iframe, incógnito), el cliente envía el token firmado por el encabezado "x-sesion" y el servidor lo acepta como respaldo. Fin del bucle "Sesión finalizada → login" en entornos con cookies de terceros bloqueadas.
+- Cierre de sesión y expiración limpian ambos mecanismos (cookie + token local), sin ventanas de sesión residual.
+- La cookie HttpOnly sigue siendo la vía principal; el respaldo solo actúa cuando la cookie no viaja.

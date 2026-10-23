@@ -61,6 +61,9 @@ export async function POST(request: NextRequest) {
         nombre: usuarioBD.nombre,
         rol: usuarioBD.rol,
       },
+      // El token viaja también en el cuerpo como respaldo para navegadores
+      // que rechazan la cookie (app embebida en iframe, p. ej.).
+      token,
     });
     respuesta.cookies.set(NOMBRE_COOKIE, token, opcionesCookie());
     return respuesta;

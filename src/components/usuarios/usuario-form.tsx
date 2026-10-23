@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { cabeceraSesion } from "@/lib/sesion-cliente";
 import type { Usuario } from "@/lib/types";
 
 type UsuarioFormProps = {
@@ -174,7 +175,10 @@ export function UsuarioForm({ editing, onSaved, onCancelEdit }: UsuarioFormProps
         isEditing && editing ? `/api/usuarios/${editing.id}` : "/api/usuarios",
         {
           method: isEditing ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...cabeceraSesion(),
+          },
           body: JSON.stringify(cuerpo),
         }
       );

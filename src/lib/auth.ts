@@ -76,7 +76,17 @@ export function verificarToken(
 
 /** Sesión a partir de una petición (route handlers). */
 export function obtenerSesionRequest(request: NextRequest): SesionPayload | null {
-  return verificarToken(request.cookies.get(NOMBRE_COOKIE)?.value);
+  // 1) Vía normal: cookie firmada.
+  const porCookie = verificarToken(request.cookies.get(NOMBRE_COOKIE)?.value);
+  if (porCookie) return porCookie;
+
+  // 2) Respaldo: algunos navegadores bloquean/rechazan cookies cuando la
+  //    aplicación corre embebida (iframe) o con ajustes estrictos. En ese
+  //    caso el cliente envía el mismo token por el encabezado "x-sesion".
+  const porEncabezado = verificarToken(request.headers.get("x-sesion"));
+  if (porEncabezado) return porEncabezado;
+
+  return null;
 }
 
 /** Sesión desde componentes de servidor. */
