@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { cabeceraSesion } from "@/lib/sesion-cliente";
 import {
   envioCorreoSchema,
   type EnvioCorreoInput,
@@ -67,7 +68,10 @@ export function EnviarCorreoDialog({
     try {
       const response = await fetch(`/api/presupuestos/${presupuesto.id}/enviar`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...cabeceraSesion(),
+        },
         body: JSON.stringify(values),
       });
       const data = await response.json().catch(() => ({}));

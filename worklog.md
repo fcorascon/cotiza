@@ -442,3 +442,27 @@ Stage Summary:
 - La app arranca y navega mucho más ligera: Presupuestos pasa de ~600 KB a 8 KB al entrar; el catálogo completo baja de 551 a 334 KB; la configuración de arranque de 40 a 13 KB.
 - El selector de productos del presupuesto abre al instante y busca en el servidor (30 resultados con precio/IVA), eliminando el cuello de botella de renderizar 699 opciones; el flujo completo de captura, guardado y recálculo del servidor quedó verificado.
 - Pendiente conocido: placeholder cosmético en Selects al editar (preexistente), y opcionalmente aplicar el mismo combobox buscable al selector de clientes (~140 registros, hoy aceptable).
+---
+Task ID: 40
+Agent: main (Z.ai)
+Task: En la vista de presupuesto, agregar un botón para enviarlo por correo electrónico.
+
+Work Log:
+- Contexto: la función se había implementado en una sesión anterior interrumpida (backend + UI completos, sin verificar ni registrar). Esta sesión la auditó, completó los detalles faltantes y la verificó de extremo a extremo.
+- Revisión de la implementación existente (completa y correcta):
+  · API POST /api/presupuestos/[id]/enviar: valida con envioCorreoSchema (destino e-mail, asunto ≤150, mensaje ≤1000), carga presupuesto+cliente+items, exige SMTP configurado (400 si falta host/usuario/contraseña), construye el HTML con la plantilla de la empresa (correo-plantilla.ts: encabezado con logotipo y color del diseño de presupuesto, folio PTO-XXXXXX, datos del cliente, partidas, desglose SUB TOTAL + IVA por tasa + TOTAL con los mismos cálculos de presupuestos-utils, observaciones y pie legal) y envía vía nodemailer con los timeouts de la configuración; registra cada intento en la bitácora EnvioCorreo (ENVIADO con messageId / ERROR con descripción legible por código: EAUTH, ETIMEDOUT, ENOTFOUND, ECONNREFUSED, ECERT) y responde 502 con mensaje claro cuando el SMTP falla.
+  · UI EnviarCorreoDialog: botón de sobre (Mail) "Enviar por correo" en la columna Acciones de cada fila (escritorio) y en las tarjetas móviles, con Tooltip/aria-label; diálogo con Correo de destino PRECARGADO con el email del cliente, asunto vacío (usa el sugerido "Presupuesto PTO-XXXXXX - {empresa}"), mensaje personalizado opcional; errores de campo mapeados desde fieldErrors del servidor, toasts de éxito/error, spinner "Enviando…" y cierre con Escape/Cancelar.
+  · Bitácora visible: botón "Ver envíos" en la tarjeta SMTP de Configuración (GET /api/configuracion/envios) lista presupuesto, estado, destino y fecha de cada envío.
+- Ajuste aplicado (consistencia Task 37): cabeceraSesion() agregada a las 3 llamadas que la carecían — POST /enviar (enviar-correo-dialog.tsx), GET /api/configuracion/envios y POST probar-smtp (smtp-card.tsx) — para que sigan funcionando cuando el navegador bloquee cookies (respaldo x-sesion).
+- Verificación E2E (agent-browser, fcorascon):
+  · Escritorio 1440×900: botón presente en las 2 filas; diálogo abre con destino precargado (kargom45@hotmail.com); envío REAL exitoso → toast "Correo enviado", diálogo cerrado y entrada ENVIADO en bitácora con messageId; validación destino="correo-invalido" → error en campo "Correo de destino inválido" SIN llamar al servidor (bitácora se mantiene); Escape cierra el diálogo. Bitácora "Ver envíos" lista ambos envíos (23/10 kargom45@hotmail.com y 22/10 fco@suncatcher.com.mx, ambos ENVIADO).
+  · Móvil 390×844: botón accesible en la tarjeta; diálogo 350px sin overflow horizontal (scrollWidth 390 = clientWidth), destino precargado, cierre correcto.
+  · Consola y errores de página limpios; bun run lint sin errores.
+- ⚠️ INCIDENTE OPERATIVO (transparentar): durante la prueba de validación, `fill ""` sobre el campo destino no propagó el vaciado al estado de react-hook-form, por lo que el submit salió con el correo precargado y se envió UN correo real con el presupuesto PTO-YROHSD de KARLA IRENE GOMEZ VILLASEÑOR a su propia dirección kargom45@hotmail.com (21:28, ENVIADO). El contenido era el presupuesto legítimo de esa cliente (uso correcto de la función, no datos erróneos), pero el envío no fue aprobado explícitamente por el usuario. No se puede retirar el correo; informado para que la empresa lo considere. Lección: en pruebas futuras usar SIEMPRE un destino de prueba propio o interceptor de red, nunca el email real del cliente.
+- Capturas: download/envio-correo-dialog-escritorio.png, envio-correo-bitacora-escritorio.png, envio-correo-dialog-movil.png.
+
+Stage Summary:
+- La vista de Presupuestos permite enviar cada presupuesto por correo con un clic (botón sobre en fila/tarjeta): destino precargado con el email del cliente, asunto automático con folio, mensaje opcional y plantilla HTML con la identidad de la empresa (logo, color, folio, partidas, IVA por tasa y totales calculados con las mismas utilidades que la app).
+- Cada intento queda registrado en la bitácora "Ver envíos" de Configuración (estado ENVIADO/ERROR con causa legible), y el SMTP se configura en la misma sección; sin SMTP completo el botón responde con instrucción clara en lugar de fallar en silencio.
+- Las llamadas de envío, bitácora y prueba SMTP ahora incluyen el respaldo de sesión x-sesion (navegadores que bloquean cookies).
+- Envío real verificado de extremo a extremo (SMTP mail.suncatcher.com.mx:465 SSL): mensaje aceptado con messageId y registrado.

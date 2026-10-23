@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { cabeceraSesion } from "@/lib/sesion-cliente";
 import type { ConfiguracionInput } from "@/lib/validations/configuracion";
 import type { EnvioCorreo } from "@/lib/types";
 
@@ -76,6 +77,7 @@ export function SmtpCard({ form }: SmtpCardProps) {
     try {
       const response = await fetch("/api/configuracion/envios", {
         cache: "no-store",
+        headers: cabeceraSesion(),
       });
       if (!response.ok) throw new Error();
       setEnvios(await response.json());
@@ -97,7 +99,10 @@ export function SmtpCard({ form }: SmtpCardProps) {
       const valores = form.getValues();
       const response = await fetch("/api/configuracion/probar-smtp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...cabeceraSesion(),
+        },
         body: JSON.stringify({
           host: valores.smtpHost,
           puerto: valores.smtpPuerto,
