@@ -17,25 +17,39 @@ type ResumenImportacion = {
   advertencias?: string[];
 };
 
+type ResumenEnvio = {
+  creados?: number;
+  actualizados?: number;
+  sinCambios?: number;
+  errores?: number;
+  advertencias?: string[];
+};
+
 function resumenPublico(fila: {
   url: string;
   gid: string;
+  appsScriptUrl: string;
   ultimaImportacion: Date | null;
   ultimoResumen: string | null;
+  ultimoEnvio: Date | null;
+  ultimoResumenEnvio: string | null;
 }) {
-  let resumen: ResumenImportacion | null = null;
-  if (fila.ultimoResumen) {
+  const parse = <T,>(texto: string | null): T | null => {
+    if (!texto) return null;
     try {
-      resumen = JSON.parse(fila.ultimoResumen) as ResumenImportacion;
+      return JSON.parse(texto) as T;
     } catch {
-      resumen = null;
+      return null;
     }
-  }
+  };
   return {
     url: fila.url,
     gid: fila.gid,
+    appsScriptUrl: fila.appsScriptUrl,
     ultimaImportacion: fila.ultimaImportacion,
-    ultimoResumen: resumen,
+    ultimoResumen: parse<ResumenImportacion>(fila.ultimoResumen),
+    ultimoEnvio: fila.ultimoEnvio,
+    ultimoResumenEnvio: parse<ResumenEnvio>(fila.ultimoResumenEnvio),
   };
 }
 
@@ -50,8 +64,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         url: "",
         gid: "",
+        appsScriptUrl: "",
         ultimaImportacion: null,
         ultimoResumen: null,
+        ultimoEnvio: null,
+        ultimoResumenEnvio: null,
       });
     }
     return NextResponse.json(resumenPublico(fila));
@@ -75,10 +92,13 @@ export async function PUT(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as {
       url?: unknown;
       gid?: unknown;
+      appsScriptUrl?: unknown;
     };
 
     const url = typeof body.url === "string" ? body.url.trim() : "";
     let gid = typeof body.gid === "string" ? body.gid.trim() : "";
+    const appsScriptUrl =
+      typeof body.appsScriptUrl === "string" ? body.appsScriptUrl.trim() : "";
 
     if (!extraerIdHoja(url)) {
       return NextResponse.json(
@@ -104,10 +124,26 @@ export async function PUT(request: NextRequest) {
 
     if (!gid) gid = extraerGid(url);
 
+    if (
+      appsScriptUrl &&
+      !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec\/?$/.test(
+        appsScriptUrl
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "La URL del Apps Script debe terminar en /exec " +
+            "(la copia al publicar la aplicación web).",
+        },
+        { status: 400 }
+      );
+    }
+
     const fila = await db.integracionSheets.upsert({
       where: { id: ID },
-      create: { id: ID, url, gid },
-      update: { url, gid },
+      create: { id: ID, url, gid, appsScriptUrl },
+      update: { url, gid, appsScriptUrl },
     });
 
     return NextResponse.json(resumenPublico(fila));

@@ -183,8 +183,11 @@ model IntegracionSheets {
   id                String    @id @default("principal")
   url               String    @default("")
   gid               String    @default("")
+  appsScriptUrl     String    @default("")
   ultimaImportacion DateTime?
   ultimoResumen     String?
+  ultimoEnvio       DateTime?
+  ultimoResumenEnvio String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }

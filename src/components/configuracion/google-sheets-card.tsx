@@ -10,6 +10,7 @@ import {
   Loader2,
   RefreshCw,
   Save,
+  Send,
   Upload,
   XCircle,
 } from "lucide-react";
@@ -99,9 +100,20 @@ type RespuestaImportacion = {
 type RespuestaConfig = {
   url: string;
   gid: string;
+  appsScriptUrl: string;
   ultimaImportacion: string | null;
   ultimoResumen: ResumenImportacion | null;
+  ultimoEnvio: string | null;
+  ultimoResumenEnvio: {
+    creados?: number;
+    actualizados?: number;
+    sinCambios?: number;
+    errores?: number;
+    advertencias?: string[];
+  } | null;
 };
+
+type ResumenEnvio = RespuestaConfig["ultimoResumenEnvio"];
 
 /**
  * Tarjeta "Google Sheets": importa el catálogo de productos desde una hoja
@@ -112,10 +124,17 @@ export function GoogleSheetsCard() {
   const { toast } = useToast();
   const [url, setUrl] = useState("");
   const [gid, setGid] = useState("");
+  const [appsScriptUrl, setAppsScriptUrl] = useState("");
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [probando, setProbando] = useState(false);
   const [importando, setImportando] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [envioConfirmar, setEnvioConfirmar] = useState(false);
+  const [resultadoEnvio, setResultadoEnvio] = useState<ResumenEnvio | null>(
+    null
+  );
+  const [ultimoEnvio, setUltimoEnvio] = useState<string | null>(null);
   const [previa, setPrevia] = useState<VistaPrevia | null>(null);
   const [resultado, setResultado] = useState<RespuestaImportacion | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +142,7 @@ export function GoogleSheetsCard() {
     null
   );
   const [confirmarAbierto, setConfirmarAbierto] = useState(false);
+  const [enviarAbierto, setEnviarAbierto] = useState(false);
 
   const cargarConfiguracion = useCallback(async () => {
     try {
@@ -134,7 +154,10 @@ export function GoogleSheetsCard() {
       const datos = (await respuesta.json()) as RespuestaConfig;
       setUrl(datos.url ?? "");
       setGid(datos.gid ?? "");
+      setAppsScriptUrl(datos.appsScriptUrl ?? "");
       setUltimaImportacion(datos.ultimaImportacion ?? null);
+      setUltimoEnvio(datos.ultimoEnvio ?? null);
+      setResultadoEnvio(datos.ultimoResumenEnvio ?? null);
     } catch {
       // Silencioso: la tarjeta queda vacía y el usuario puede configurarla.
     } finally {
@@ -161,7 +184,7 @@ export function GoogleSheetsCard() {
           "Content-Type": "application/json",
           ...cabeceraSesion(),
         },
-        body: JSON.stringify({ url, gid }),
+        body: JSON.stringify({ url, gid, appsScriptUrl }),
       });
       const datos = await respuesta.json().catch(() => ({}));
       if (!respuesta.ok) {
@@ -170,6 +193,7 @@ export function GoogleSheetsCard() {
       }
       setUrl(datos.url ?? url);
       setGid(datos.gid ?? gid);
+      setAppsScriptUrl(datos.appsScriptUrl ?? appsScriptUrl);
       toast({
         title: "Enlace guardado",
         description: "La configuración de Google Sheets se guardó.",
@@ -246,6 +270,38 @@ export function GoogleSheetsCard() {
     }
   }
 
+  async function enviarAHoja() {
+    setEnviando(true);
+    limpiarMensajes();
+    try {
+      const respuesta = await fetch("/api/google-sheets/enviar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...cabeceraSesion(),
+        },
+        body: JSON.stringify({}),
+      });
+      const datos = await respuesta.json().catch(() => ({}));
+      if (!respuesta.ok) {
+        setError(datos?.error ?? "No fue posible enviar a la hoja.");
+        return;
+      }
+      setResultadoEnvio(datos.resumen ?? null);
+      setUltimoEnvio(datos.ultimoEnvio ?? new Date().toISOString());
+      setEnviarAbierto(false);
+      const resumen = datos.resumen;
+      toast({
+        title: "Catálogo enviado",
+        description: `${resumen.creados} fila(s) nueva(s), ${resumen.actualizados} actualizada(s), ${resumen.sinCambios} sin cambios en la hoja.`,
+      });
+    } catch {
+      setError("No fue posible comunicar con el servidor.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
   const columnasRequeridas = previa?.columnas.filter(
     (columna) => columna.campo === "descripcion"
   );
@@ -262,8 +318,9 @@ export function GoogleSheetsCard() {
           </Badge>
         </CardTitle>
         <CardDescription>
-          Importa productos, precios y categorías desde una hoja de cálculo.
-          Requiere que la hoja esté compartida como{" "}
+          Importa productos de la hoja de cálculo y envía los cambios de la
+          app de regreso a la hoja (sincronización en dos vías). La lectura
+          requiere que la hoja esté compartida como{" "}
           <strong>&quot;Cualquier persona con el enlace: Lector&quot;</strong>.
         </CardDescription>
       </CardHeader>
@@ -271,10 +328,11 @@ export function GoogleSheetsCard() {
         <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <p>
-            En Google Sheets: <strong>Compartir</strong> →{" "}
-            <strong>Acceso general</strong> → <strong>Cualquier persona con el
-            enlace</strong> → <strong>Lector</strong>. La aplicación solo lee la
-            hoja; nunca escribe en ella.
+            Importar lee la hoja (compartir →{" "}
+            <strong>Cualquier persona con el enlace → Lector</strong>). Enviar
+            escribe los productos de la app en la pestaña mediante el Apps
+            Script publicado: agrega filas nuevas y actualiza las existentes
+            comparando la descripción; nunca elimina filas de la hoja.
           </p>
         </div>
 
@@ -302,6 +360,21 @@ export function GoogleSheetsCard() {
               Puedes escribir el nombre de la pestaña (por ejemplo{" "}
               <code>productos</code>) o su gid numérico. Si se deja vacío, se
               usa la pestaña indicada en el enlace.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="sheets-apps-script">App Script URL</Label>
+            <Input
+              id="sheets-apps-script"
+              placeholder="https://script.google.com/macros/s/…/exec"
+              value={appsScriptUrl}
+              onChange={(evento) => setAppsScriptUrl(evento.target.value)}
+              disabled={cargando || guardando || enviando || importando}
+            />
+            <p className="text-xs text-muted-foreground">
+              URL que Google entrega al publicar el Apps Script del proyecto
+              (webapp terminada en <code>/exec</code>). Sin ella no se puede
+              escribir en la hoja.
             </p>
           </div>
         </div>
@@ -357,7 +430,35 @@ export function GoogleSheetsCard() {
             )}
             Importar catálogo
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setEnviarAbierto(true)}
+            disabled={
+              cargando ||
+              guardando ||
+              probando ||
+              importando ||
+              enviando ||
+              !appsScriptUrl.trim()
+            }
+          >
+            {enviando ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Send className="mr-2 h-4 w-4" aria-hidden="true" />
+            )}
+            Enviar a la hoja
+          </Button>
         </div>
+
+        {ultimoEnvio ? (
+          <p className="text-xs text-muted-foreground">
+            Último envío a la hoja:{" "}
+            {new Date(ultimoEnvio).toLocaleString("es-MX")}
+          </p>
+        ) : null}
 
         {ultimaImportacion ? (
           <p className="text-xs text-muted-foreground">
@@ -556,6 +657,76 @@ export function GoogleSheetsCard() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <AlertDialog
+          open={enviarAbierto}
+          onOpenChange={setEnviarAbierto}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Enviar a Google Sheets?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Se enviarán los productos de la app al Apps Script: agregará
+                a la pestaña las filas nuevas y actualizará iva, costo,
+                margen y precio de las filas existentes cuyos datos hayan
+                cambiado (comparando la descripción). No se eliminan filas
+                de la hoja.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={enviando}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(evento) => {
+                  evento.preventDefault();
+                  enviarAHoja();
+                }}
+                disabled={enviando}
+              >
+                {enviando ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" aria-hidden="true" />
+                )}
+                Sí, enviar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {resultadoEnvio ? (
+          <div className="space-y-2 rounded-lg border border-emerald-600/30 bg-emerald-50/60 p-3 text-sm">
+            <p className="flex items-center gap-2 font-medium text-emerald-800">
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              Envío completado
+            </p>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
+                {resultadoEnvio.creados ?? 0} fila(s) agregada(s)
+              </Badge>
+              <Badge className="bg-sky-600 text-white hover:bg-sky-600">
+                {resultadoEnvio.actualizados ?? 0} actualizada(s)
+              </Badge>
+              <Badge variant="secondary">
+                {resultadoEnvio.sinCambios ?? 0} sin cambios
+              </Badge>
+              {(resultadoEnvio.errores ?? 0) > 0 ? (
+                <Badge variant="destructive">
+                  {resultadoEnvio.errores} con error
+                </Badge>
+              ) : null}
+            </div>
+            {resultadoEnvio.advertencias &&
+            resultadoEnvio.advertencias.length > 0 ? (
+              <ul className="list-inside list-disc space-y-1 text-xs text-amber-700">
+                {resultadoEnvio.advertencias.map((advertencia, indice) => (
+                  <li key={indice}>{advertencia}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
