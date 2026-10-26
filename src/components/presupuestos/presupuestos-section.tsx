@@ -11,6 +11,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type {
   Cliente,
+  Configuracion,
   Presupuesto,
   SeccionApp,
 } from "@/lib/types";
@@ -22,6 +23,8 @@ type PresupuestosSectionProps = {
 export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
   const { toast } = useToast();
   const { configuracion } = useConfiguracionAplicacion();
+  const [configuracionCompleta, setConfiguracionCompleta] =
+    useState<Configuracion | null>(null);
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [cargandoClientes, setCargandoClientes] = useState(false);
@@ -78,6 +81,23 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
   useEffect(() => {
     cargarPresupuestos();
   }, [cargarPresupuestos]);
+
+  useEffect(() => {
+    let cancelada = false;
+    (async () => {
+      try {
+        const response = await fetch("/api/configuracion", { cache: "no-store" });
+        if (!response.ok) return;
+        const data: Configuracion = await response.json();
+        if (!cancelada) setConfiguracionCompleta(data);
+      } catch {
+        // Sin configuración completa se conserva la básica del contexto.
+      }
+    })();
+    return () => {
+      cancelada = true;
+    };
+  }, []);
 
   // Una vez montado el formulario, desplazar la vista hacia él.
   useEffect(() => {
@@ -157,7 +177,7 @@ export function PresupuestosSection({ onIrA }: PresupuestosSectionProps) {
           presupuestos={presupuestos}
           loading={loading}
           editing={editing}
-          configuracion={configuracion}
+          configuracion={configuracionCompleta ?? configuracion}
           onEdit={handleEdit}
           onChanged={cargarPresupuestos}
         />

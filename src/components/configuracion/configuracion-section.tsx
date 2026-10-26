@@ -21,6 +21,7 @@ import {
 import { EmpresaCard } from "@/components/configuracion/empresa-card";
 import { SmtpCard } from "@/components/configuracion/smtp-card";
 import { DisenoCard } from "@/components/configuracion/diseno-card";
+import { GoogleSheetsCard } from "@/components/configuracion/google-sheets-card";
 import {
   AparienciaCard,
 } from "@/components/configuracion/apariencia-card";
@@ -225,6 +226,7 @@ export function ConfiguracionSection() {
                   icono={<ReceiptText className="h-4 w-4 text-primary" aria-hidden="true" />}
                   form={form}
                 />
+                <GoogleSheetsCard />
               </div>
             </div>
 

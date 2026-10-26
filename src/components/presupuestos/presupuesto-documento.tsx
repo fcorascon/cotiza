@@ -3,6 +3,7 @@
 import {
   calcularTotalesPresupuesto,
   formatearFechaISO,
+  numeroALetras,
 } from "@/lib/presupuestos-utils";
 import { formatearMoneda } from "@/lib/productos-utils";
 import type { Configuracion, Presupuesto } from "@/lib/types";
@@ -70,14 +71,9 @@ export function PresupuestoDocumento({
             </div>
           )}
           <div className="min-w-0">
-            <p className="truncate text-xl font-bold leading-tight">
+            <p className="break-words text-xl font-bold leading-tight">
               {empresa.nombre}
             </p>
-            {empresa.razonLegal && (
-              <p className="truncate text-xs text-neutral-500">
-                {empresa.razonLegal}
-              </p>
-            )}
             <p className="mt-1 text-xs text-neutral-600">
               RFC: {empresa.rfc}
               {empresa.direccion ? ` · ${empresa.direccion}` : ""}
@@ -141,14 +137,11 @@ export function PresupuestoDocumento({
         <table className="w-full table-fixed border-collapse text-left">
           <thead>
             <tr style={{ backgroundColor: color, color: "#ffffff" }}>
-              <th className="hidden w-[5%] px-1.5 py-2 text-center text-[11px] font-semibold uppercase sm:table-cell sm:px-2">
-                #
+              <th className="w-[13%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[12%] sm:px-2">
+                Cantidad
               </th>
               <th className="w-[44%] px-1.5 py-2 text-[11px] font-semibold uppercase sm:w-[45%] sm:px-2">
                 Producto
-              </th>
-              <th className="w-[13%] px-1.5 py-2 text-right text-[11px] font-semibold uppercase sm:w-[12%] sm:px-2">
-                Cantidad
               </th>
               <th className="w-[16%] px-1.5 py-2 text-right text-[11px] font-semibold uppercase sm:w-[14%] sm:px-2">
                 P. unitario
@@ -170,11 +163,11 @@ export function PresupuestoDocumento({
                 }`}
               >
                 <td
-                  className={`hidden border-l border-neutral-200 px-1.5 text-center align-top tabular-nums text-neutral-500 sm:table-cell sm:px-2 ${
+                  className={`px-1.5 text-left align-top tabular-nums sm:px-2 ${
                     filaGrande ? "py-3.5" : "py-2"
                   }`}
                 >
-                  {indice + 1}
+                  {formatearCantidad.format(item.cantidad)}
                 </td>
                 <td
                   className={`px-1.5 align-top sm:px-2 ${
@@ -193,13 +186,6 @@ export function PresupuestoDocumento({
                       {" · IVA "+item.ivaTasa+"%"}
                     </span>
                   </p>
-                </td>
-                <td
-                  className={`px-1.5 text-right align-top tabular-nums sm:px-2 ${
-                    filaGrande ? "py-3.5" : "py-2"
-                  }`}
-                >
-                  {formatearCantidad.format(item.cantidad)}
                 </td>
                 <td
                   className={`px-1.5 text-right align-top tabular-nums sm:px-2 ${
@@ -229,7 +215,21 @@ export function PresupuestoDocumento({
       </section>
 
       {/* Totales */}
-      <section className="mt-5 flex justify-end">
+      <section className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="text-sm text-neutral-700">
+          <p>
+            <span className="font-semibold">Cantidad de artículos: </span>
+            <span className="tabular-nums">
+              {formatearCantidad.format(
+                items.reduce((suma, item) => suma + item.cantidad, 0)
+              )}
+            </span>
+          </p>
+          <p className="mt-2 max-w-md text-xs uppercase leading-snug text-neutral-600">
+            <span className="font-semibold">Total en letra: </span>
+            {numeroALetras(presupuesto.total)}
+          </p>
+        </div>
         <div className="w-full max-w-xs text-sm">
           <div className="flex items-center justify-between py-1">
             <span className="text-neutral-600">SUB TOTAL</span>

@@ -285,7 +285,7 @@ export function PresupuestosTable({
                       {presupuesto.items.length > 0 &&
                         `· ${formatearMoneda(presupuesto.subtotal)}`}
                     </p>
-                    <div className="mt-2 flex justify-end gap-1 border-t pt-2">
+                    <div className="mt-2 flex justify-start gap-1 border-t pt-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -371,6 +371,9 @@ export function PresupuestosTable({
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
+                    <TableHead className="w-[148px] text-left">
+                      Acciones
+                    </TableHead>
                     <TableHead className="w-[11%] whitespace-nowrap">
                       Fecha
                     </TableHead>
@@ -387,9 +390,6 @@ export function PresupuestosTable({
                     <TableHead className="w-[12%] whitespace-nowrap px-2 text-right">
                       Total
                     </TableHead>
-                    <TableHead className="w-[148px] text-right">
-                      Acciones
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -403,54 +403,8 @@ export function PresupuestosTable({
                         key={presupuesto.id}
                         className={esSeleccionado ? "bg-accent/60" : undefined}
                       >
-                        <TableCell className="whitespace-nowrap align-top text-sm tabular-nums">
-                          {formatearFechaISO(presupuesto.fecha)}
-                        </TableCell>
-
-                        <TableCell className="align-top">
-                          <span
-                            className="block truncate font-medium"
-                            title={presupuesto.cliente.razonSocial}
-                          >
-                            {presupuesto.cliente.razonSocial}
-                          </span>
-                          <p className="text-xs text-muted-foreground lg:hidden">
-                            {presupuesto.items.length}{" "}
-                            {presupuesto.items.length === 1
-                              ? "producto"
-                              : "productos"}
-                          </p>
-                        </TableCell>
-
-                        <TableCell className="hidden align-top lg:table-cell">
-                          <span
-                            className="block truncate text-sm"
-                            title={primerProducto}
-                          >
-                            {primerProducto}
-                          </span>
-                          {restantes > 0 && (
-                            <p className="truncate text-xs text-muted-foreground">
-                              + {restantes}{" "}
-                              {restantes === 1 ? "producto más" : "productos más"}
-                            </p>
-                          )}
-                        </TableCell>
-
-                        <TableCell className="hidden whitespace-nowrap px-2 align-top text-right text-sm tabular-nums sm:table-cell">
-                          {formatearMoneda(presupuesto.subtotal)}
-                        </TableCell>
-
-                        <TableCell className="hidden whitespace-nowrap px-2 align-top text-right text-sm tabular-nums text-muted-foreground sm:table-cell">
-                          {formatearMoneda(presupuesto.iva)}
-                        </TableCell>
-
-                        <TableCell className="whitespace-nowrap px-2 align-top text-right text-sm font-semibold tabular-nums">
-                          {formatearMoneda(presupuesto.total)}
-                        </TableCell>
-
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
+                        <TableCell className="text-left">
+                          <div className="flex justify-start gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -541,6 +495,51 @@ export function PresupuestosTable({
                               <TooltipContent>Eliminar</TooltipContent>
                             </Tooltip>
                           </div>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap align-top text-sm tabular-nums">
+                          {formatearFechaISO(presupuesto.fecha)}
+                        </TableCell>
+
+                        <TableCell className="align-top">
+                          <span
+                            className="block truncate font-medium"
+                            title={presupuesto.cliente.razonSocial}
+                          >
+                            {presupuesto.cliente.razonSocial}
+                          </span>
+                          <p className="text-xs text-muted-foreground lg:hidden">
+                            {presupuesto.items.length}{" "}
+                            {presupuesto.items.length === 1
+                              ? "producto"
+                              : "productos"}
+                          </p>
+                        </TableCell>
+
+                        <TableCell className="hidden align-top lg:table-cell">
+                          <span
+                            className="block truncate text-sm"
+                            title={primerProducto}
+                          >
+                            {primerProducto}
+                          </span>
+                          {restantes > 0 && (
+                            <p className="truncate text-xs text-muted-foreground">
+                              + {restantes}{" "}
+                              {restantes === 1 ? "producto más" : "productos más"}
+                            </p>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="hidden whitespace-nowrap px-2 align-top text-right text-sm tabular-nums sm:table-cell">
+                          {formatearMoneda(presupuesto.subtotal)}
+                        </TableCell>
+
+                        <TableCell className="hidden whitespace-nowrap px-2 align-top text-right text-sm tabular-nums text-muted-foreground sm:table-cell">
+                          {formatearMoneda(presupuesto.iva)}
+                        </TableCell>
+
+                        <TableCell className="whitespace-nowrap px-2 align-top text-right text-sm font-semibold tabular-nums">
+                          {formatearMoneda(presupuesto.total)}
                         </TableCell>
                       </TableRow>
                     );

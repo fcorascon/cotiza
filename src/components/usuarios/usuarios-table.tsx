@@ -247,15 +247,15 @@ export function UsuariosTable({
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
+                    <TableHead className="w-[96px] text-left">
+                      Acciones
+                    </TableHead>
                     <TableHead className="w-[24%]">Usuario</TableHead>
                     <TableHead className="w-[28%]">Nombre</TableHead>
                     <TableHead className="w-[16%]">Rol</TableHead>
                     <TableHead className="w-[14%]">Estado</TableHead>
                     <TableHead className="hidden w-[14%] sm:table-cell">
                       Creado
-                    </TableHead>
-                    <TableHead className="w-[96px] text-right">
-                      Acciones
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -268,6 +268,51 @@ export function UsuariosTable({
                         key={u.id}
                         className={esSeleccionado ? "bg-accent/60" : undefined}
                       >
+                        <TableCell className="text-left">
+                          <div className="flex justify-start gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => onEdit(u)}
+                                  aria-label={`Editar usuario ${u.usuario}`}
+                                >
+                                  <Pencil
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Editar</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => setPorEliminar(u)}
+                                  disabled={esActual}
+                                  aria-label={`Eliminar usuario ${u.usuario}`}
+                                >
+                                  <Trash2
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              {esActual ? (
+                                <TooltipContent>
+                                  No puede eliminar su propia cuenta
+                                </TooltipContent>
+                              ) : (
+                                <TooltipContent>Eliminar</TooltipContent>
+                              )}
+                            </Tooltip>
+                          </div>
+                        </TableCell>
                         <TableCell className="align-top">
                           <span
                             className="block truncate font-medium"
@@ -314,52 +359,6 @@ export function UsuariosTable({
 
                         <TableCell className="hidden align-top text-sm text-muted-foreground sm:table-cell">
                           {formatearFecha(u.createdAt)}
-                        </TableCell>
-
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => onEdit(u)}
-                                  aria-label={`Editar usuario ${u.usuario}`}
-                                >
-                                  <Pencil
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                  />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Editar</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => setPorEliminar(u)}
-                                  disabled={esActual}
-                                  aria-label={`Eliminar usuario ${u.usuario}`}
-                                >
-                                  <Trash2
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                  />
-                                </Button>
-                              </TooltipTrigger>
-                              {esActual ? (
-                                <TooltipContent>
-                                  No puede eliminar su propia cuenta
-                                </TooltipContent>
-                              ) : (
-                                <TooltipContent>Eliminar</TooltipContent>
-                              )}
-                            </Tooltip>
-                          </div>
                         </TableCell>
                       </TableRow>
                     );

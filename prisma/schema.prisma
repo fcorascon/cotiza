@@ -172,3 +172,19 @@ model EnvioCorreo {
   @@index([presupuestoId])
   @@index([createdAt])
 }
+
+/*
+ * Integración con Google Sheets (importación del catálogo de productos).
+ * La hoja debe estar compartida como "Cualquier persona con el enlace: Lector".
+ * Se guarda el enlace completo y, si se indica, el gid de la pestaña.
+ * ultimoResumen guarda el resumen JSON de la última importación.
+ */
+model IntegracionSheets {
+  id                String    @id @default("principal")
+  url               String    @default("")
+  gid               String    @default("")
+  ultimaImportacion DateTime?
+  ultimoResumen     String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}

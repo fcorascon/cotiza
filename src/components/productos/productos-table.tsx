@@ -249,7 +249,7 @@ export function ProductosTable({
                           {producto.unidad.unidad} · IVA {producto.iva.tasa}%
                         </p>
                       </div>
-                      <div className="flex shrink-0 gap-1">
+                      <div className="order-first flex shrink-0 gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -302,6 +302,9 @@ export function ProductosTable({
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
+                    <TableHead className="w-[90px] text-left">
+                      Acciones
+                    </TableHead>
                     <TableHead className="w-[34%]">
                       Descripción
                     </TableHead>
@@ -323,9 +326,6 @@ export function ProductosTable({
                     <TableHead className="w-[12%] whitespace-nowrap px-2 text-right">
                       Subtotal
                     </TableHead>
-                    <TableHead className="w-[90px] text-right">
-                      Acciones
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -336,6 +336,44 @@ export function ProductosTable({
                         key={producto.id}
                         className={esSeleccionado ? "bg-accent/60" : undefined}
                       >
+                        <TableCell className="text-left">
+                          <div className="flex justify-start gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => onEdit(producto)}
+                                  aria-label={`Editar producto ${producto.descripcion}`}
+                                >
+                                  <Pencil
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Editar</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => setPorEliminar(producto)}
+                                  aria-label={`Eliminar producto ${producto.descripcion}`}
+                                >
+                                  <Trash2
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Eliminar</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TableCell>
                         <TableCell className="align-top">
                           <div className="flex items-start gap-1.5">
                             <span
@@ -397,45 +435,6 @@ export function ProductosTable({
 
                         <TableCell className="whitespace-nowrap px-2 align-top text-right text-xs font-semibold tabular-nums sm:text-sm">
                           {formatearMoneda(producto.subtotal)}
-                        </TableCell>
-
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => onEdit(producto)}
-                                  aria-label={`Editar producto ${producto.descripcion}`}
-                                >
-                                  <Pencil
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                  />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Editar</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => setPorEliminar(producto)}
-                                  aria-label={`Eliminar producto ${producto.descripcion}`}
-                                >
-                                  <Trash2
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                  />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Eliminar</TooltipContent>
-                            </Tooltip>
-                          </div>
                         </TableCell>
                       </TableRow>
                     );

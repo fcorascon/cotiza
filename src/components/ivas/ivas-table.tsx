@@ -210,12 +210,12 @@ export function IvasTable({
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
+                    <TableHead className="w-[110px] text-left">
+                      Acciones
+                    </TableHead>
                     <TableHead className="w-[55%]">Tasa de IVA</TableHead>
                     <TableHead className="hidden w-[25%] sm:table-cell">
                       Registrada
-                    </TableHead>
-                    <TableHead className="w-[110px] text-right">
-                      Acciones
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -227,27 +227,8 @@ export function IvasTable({
                         key={iva.id}
                         className={esSeleccionada ? "bg-accent/60" : undefined}
                       >
-                        <TableCell className="align-top">
-                          <div className="flex items-start gap-2">
-                            <Percent
-                              className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-                              aria-hidden="true"
-                            />
-                            <span
-                              className="truncate font-medium tabular-nums"
-                              title={formatearTasa(iva.tasa)}
-                            >
-                              {formatearTasa(iva.tasa)}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="hidden align-top text-sm text-muted-foreground sm:table-cell">
-                          {formatearFecha(iva.createdAt)}
-                        </TableCell>
-
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
+                        <TableCell className="text-left">
+                          <div className="flex justify-start gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -283,6 +264,24 @@ export function IvasTable({
                               <TooltipContent>Eliminar</TooltipContent>
                             </Tooltip>
                           </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex items-start gap-2">
+                            <Percent
+                              className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                            <span
+                              className="truncate font-medium tabular-nums"
+                              title={formatearTasa(iva.tasa)}
+                            >
+                              {formatearTasa(iva.tasa)}
+                            </span>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="hidden align-top text-sm text-muted-foreground sm:table-cell">
+                          {formatearFecha(iva.createdAt)}
                         </TableCell>
                       </TableRow>
                     );

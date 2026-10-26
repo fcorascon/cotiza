@@ -204,12 +204,12 @@ export function CategoriasTable({
               <Table className="table-fixed">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
+                    <TableHead className="w-[110px] text-left">
+                      Acciones
+                    </TableHead>
                     <TableHead className="w-[55%]">Categoría</TableHead>
                     <TableHead className="hidden w-[25%] sm:table-cell">
                       Registrada
-                    </TableHead>
-                    <TableHead className="w-[110px] text-right">
-                      Acciones
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -221,27 +221,8 @@ export function CategoriasTable({
                         key={categoria.id}
                         className={esSeleccionada ? "bg-accent/60" : undefined}
                       >
-                        <TableCell className="align-top">
-                          <div className="flex items-start gap-2">
-                            <Tags
-                              className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-                              aria-hidden="true"
-                            />
-                            <span
-                              className="truncate font-medium"
-                              title={categoria.categoria}
-                            >
-                              {categoria.categoria}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="hidden align-top text-sm text-muted-foreground sm:table-cell">
-                          {formatearFecha(categoria.createdAt)}
-                        </TableCell>
-
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
+                        <TableCell className="text-left">
+                          <div className="flex justify-start gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -277,6 +258,24 @@ export function CategoriasTable({
                               <TooltipContent>Eliminar</TooltipContent>
                             </Tooltip>
                           </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex items-start gap-2">
+                            <Tags
+                              className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                            <span
+                              className="truncate font-medium"
+                              title={categoria.categoria}
+                            >
+                              {categoria.categoria}
+                            </span>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="hidden align-top text-sm text-muted-foreground sm:table-cell">
+                          {formatearFecha(categoria.createdAt)}
                         </TableCell>
                       </TableRow>
                     );

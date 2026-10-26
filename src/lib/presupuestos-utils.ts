@@ -73,6 +73,125 @@ export function formatearFechaISO(fecha: string): string {
   return `${dia}/${mes}/${anio}`;
 }
 
+/**
+ * Convierte un monto a su representación en letras (español, México),
+ * con formato "CIENTO VEINTE PESOS 34/100 M.N.".
+ */
+export function numeroALetras(valor: number): string {
+  if (!Number.isFinite(valor) || valor < 0) valor = 0;
+
+  const entero = Math.floor(valor + 1e-9);
+  const centavos = Math.round((valor - entero) * 100);
+
+  const unidades = [
+    "",
+    "UN",
+    "DOS",
+    "TRES",
+    "CUATRO",
+    "CINCO",
+    "SEIS",
+    "SIETE",
+    "OCHO",
+    "NUEVE",
+  ];
+  const especiales: Record<number, string> = {
+    10: "DIEZ",
+    11: "ONCE",
+    12: "DOCE",
+    13: "TRECE",
+    14: "CATORCE",
+    15: "QUINCE",
+    16: "DIECISÉIS",
+    17: "DIECISIETE",
+    18: "DIECIOCHO",
+    19: "DIECINUEVE",
+    20: "VEINTE",
+    21: "VEINTIÚN",
+    22: "VEINTIDÓS",
+    23: "VEINTITRÉS",
+    24: "VEINTICUATRO",
+    25: "VEINTICINCO",
+    26: "VEINTISÉIS",
+    27: "VEINTISIETE",
+    28: "VEINTIOCHO",
+    29: "VEINTINUEVE",
+  };
+  const decenas = [
+    "",
+    "",
+    "VEINTE",
+    "TREINTA",
+    "CUARENTA",
+    "CINCUENTA",
+    "SESENTA",
+    "SETENTA",
+    "OCHENTA",
+    "NOVENTA",
+  ];
+  const centenas = [
+    "",
+    "CIENTO",
+    "DOSCIENTOS",
+    "TRESCIENTOS",
+    "CUATROCIENTOS",
+    "QUINIENTOS",
+    "SEISCIENTOS",
+    "SETECIENTOS",
+    "OCHOCIENTOS",
+    "NOVECIENTOS",
+  ];
+
+  function menor100(n: number): string {
+    if (n === 0) return "";
+    if (n < 10) return unidades[n];
+    if (n in especiales) return especiales[n];
+    const d = Math.floor(n / 10);
+    const u = n % 10;
+    if (u === 0) return decenas[d];
+    return `${decenas[d]} Y ${unidades[u]}`;
+  }
+
+  function menor1000(n: number): string {
+    if (n === 0) return "";
+    if (n === 100) return "CIEN";
+    const c = Math.floor(n / 100);
+    const resto = n % 100;
+    if (c === 0) return menor100(resto);
+    const parteCentenas = centenas[c];
+    const parteResto = menor100(resto);
+    return parteResto ? `${parteCentenas} ${parteResto}` : parteCentenas;
+  }
+
+  function convertir(n: number): string {
+    if (n === 0) return "CERO";
+    const partes: string[] = [];
+    const millones = Math.floor(n / 1_000_000);
+    const miles = Math.floor((n % 1_000_000) / 1_000);
+    const resto = n % 1_000;
+
+    if (millones > 0) {
+      const textoMillones = menor1000(millones);
+      partes.push(
+        millones === 1 ? `${textoMillones} MILLÓN` : `${textoMillones} MILLONES`
+      );
+    }
+    if (miles > 0) {
+      const textoMiles = menor1000(miles);
+      if (miles === 1) partes.push("MIL");
+      else partes.push(`${textoMiles} MIL`);
+    }
+    if (resto > 0) {
+      partes.push(menor1000(resto));
+    }
+    return partes.join(" ").trim();
+  }
+
+  const palabras = convertir(entero);
+  const moneda = entero === 1 ? "PESO" : "PESOS";
+  return `${palabras} ${moneda} ${String(centavos).padStart(2, "0")}/100 M.N.`;
+}
+
 /** Devuelve la fecha de hoy como texto ISO (YYYY-MM-DD) en zona local. */
 export function fechaHoyISO(): string {
   const ahora = new Date();

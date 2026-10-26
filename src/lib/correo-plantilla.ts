@@ -9,6 +9,7 @@ import { formatearMoneda } from "@/lib/productos-utils";
 import {
   calcularTotalesPresupuesto,
   formatearFechaISO,
+  numeroALetras,
 } from "@/lib/presupuestos-utils";
 import type { Configuracion, Presupuesto } from "@/lib/types";
 
@@ -83,6 +84,10 @@ export function crearHtmlPresupuesto(
   const { subtotal, ivaPorTasa, total } = calcularTotalesPresupuesto(
     presupuesto.items
   );
+  const totalArticulos = presupuesto.items.reduce(
+    (suma, item) => suma + item.cantidad,
+    0
+  );
 
   const lineaDireccionCliente = `${presupuesto.cliente.calle} ${presupuesto.cliente.numero}, ${presupuesto.cliente.colonia}, C.P. ${presupuesto.cliente.codigoPostal}, ${presupuesto.cliente.ciudad}, ${presupuesto.cliente.estado}`;
 
@@ -90,9 +95,9 @@ export function crearHtmlPresupuesto(
     .map(
       (item, indice) => `
       <tr style="background:${indice % 2 === 0 ? "#ffffff" : "#f8fafc"};">
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;text-align:left;">${item.cantidad}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;text-align:left;">${escapar(item.unidad ?? "—")}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;">${escapar(item.descripcion)}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;text-align:center;">${item.cantidad}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;text-align:center;">${escapar(item.unidad ?? "—")}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;text-align:right;">${formatearMoneda(item.precioUnitario)}</td>
         <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;text-align:right;font-weight:bold;">${formatearMoneda(item.importe)}</td>
       </tr>`
@@ -175,9 +180,9 @@ export function crearHtmlPresupuesto(
         <tr><td style="padding:16px 24px 0;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;">
             <tr style="background:${color};">
+              <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:left;">CANT.</th>
+              <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:left;">UNIDAD</th>
               <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:left;">DESCRIPCIÓN</th>
-              <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:center;">CANT.</th>
-              <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:center;">UNIDAD</th>
               <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:right;">P. UNIT.</th>
               <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:right;">IMPORTE</th>
             </tr>
@@ -198,6 +203,16 @@ export function crearHtmlPresupuesto(
               <td style="padding:9px 10px;font-size:14px;color:#ffffff;background:${color};text-align:right;"><strong>${formatearMoneda(total)}</strong></td>
             </tr>
           </table>
+        </td></tr>
+
+        <!-- Cantidad de artículos y total en letras -->
+        <tr><td style="padding:10px 24px 0;">
+          <p style="margin:0;font-size:12px;color:#334155;">
+            <strong>Cantidad de artículos:</strong> ${totalArticulos}
+          </p>
+          <p style="margin:4px 0 0;font-size:11px;color:#475569;text-transform:uppercase;line-height:1.5;">
+            <strong>Total en letra:</strong> ${escapar(numeroALetras(total))}
+          </p>
         </td></tr>
 
         <!-- Observaciones -->
