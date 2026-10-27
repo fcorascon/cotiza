@@ -57,3 +57,6 @@ server.log
 db/*.db-journal
 vendor-tgz/
 package.json.bak
+
+# migración temporal
+/bd-migrada.json
