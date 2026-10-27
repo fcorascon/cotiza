@@ -95,10 +95,21 @@ export async function PUT(request: NextRequest) {
       appsScriptUrl?: unknown;
     };
 
-    const url = typeof body.url === "string" ? body.url.trim() : "";
+    let url = typeof body.url === "string" ? body.url.trim() : "";
     let gid = typeof body.gid === "string" ? body.gid.trim() : "";
     const appsScriptUrl =
       typeof body.appsScriptUrl === "string" ? body.appsScriptUrl.trim() : "";
+
+    // Sin url en la petición se conserva la guardada (para actualizar solo
+    // la pestaña o la URL del Apps Script).
+    let guardada: { url: string; gid: string } | null = null;
+    if (!url || !gid) {
+      guardada = await db.integracionSheets.findUnique({
+        where: { id: ID },
+        select: { url: true, gid: true },
+      });
+      if (!url) url = guardada?.url ?? "";
+    }
 
     if (!extraerIdHoja(url)) {
       return NextResponse.json(
@@ -122,7 +133,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (!gid) gid = extraerGid(url);
+    if (!gid) gid = guardada?.gid || extraerGid(url) || "";
 
     if (
       appsScriptUrl &&
