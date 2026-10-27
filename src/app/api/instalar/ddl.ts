@@ -1,4 +1,4 @@
-/** DDL generado automáticamente con prisma migrate diff (idempotente). NO EDITAR. */
+/** DDL generado automáticamente con prisma migrate diff (tablas/índices idempotentes). NO EDITAR. */
 export const DDL = `-- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
@@ -214,24 +214,24 @@ CREATE INDEX IF NOT EXISTS "EnvioCorreo_presupuestoId_idx" ON "EnvioCorreo"("pre
 CREATE INDEX IF NOT EXISTS "EnvioCorreo_createdAt_idx" ON "EnvioCorreo"("createdAt");
 
 -- AddForeignKey
-ALTER TABLE IF NOT EXISTS "Producto" ADD CONSTRAINT IF NOT EXISTS "Producto_unidadId_fkey" FOREIGN KEY ("unidadId") REFERENCES "Unidad"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Producto" ADD CONSTRAINT "Producto_unidadId_fkey" FOREIGN KEY ("unidadId") REFERENCES "Unidad"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE IF NOT EXISTS "Producto" ADD CONSTRAINT IF NOT EXISTS "Producto_categoriaId_fkey" FOREIGN KEY ("categoriaId") REFERENCES "Categoria"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Producto" ADD CONSTRAINT "Producto_categoriaId_fkey" FOREIGN KEY ("categoriaId") REFERENCES "Categoria"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE IF NOT EXISTS "Producto" ADD CONSTRAINT IF NOT EXISTS "Producto_ivaId_fkey" FOREIGN KEY ("ivaId") REFERENCES "Iva"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Producto" ADD CONSTRAINT "Producto_ivaId_fkey" FOREIGN KEY ("ivaId") REFERENCES "Iva"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE IF NOT EXISTS "Presupuesto" ADD CONSTRAINT IF NOT EXISTS "Presupuesto_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Presupuesto" ADD CONSTRAINT "Presupuesto_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE IF NOT EXISTS "PresupuestoItem" ADD CONSTRAINT IF NOT EXISTS "PresupuestoItem_presupuestoId_fkey" FOREIGN KEY ("presupuestoId") REFERENCES "Presupuesto"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "PresupuestoItem" ADD CONSTRAINT "PresupuestoItem_presupuestoId_fkey" FOREIGN KEY ("presupuestoId") REFERENCES "Presupuesto"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE IF NOT EXISTS "PresupuestoItem" ADD CONSTRAINT IF NOT EXISTS "PresupuestoItem_productoId_fkey" FOREIGN KEY ("productoId") REFERENCES "Producto"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "PresupuestoItem" ADD CONSTRAINT "PresupuestoItem_productoId_fkey" FOREIGN KEY ("productoId") REFERENCES "Producto"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE IF NOT EXISTS "EnvioCorreo" ADD CONSTRAINT IF NOT EXISTS "EnvioCorreo_presupuestoId_fkey" FOREIGN KEY ("presupuestoId") REFERENCES "Presupuesto"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "EnvioCorreo" ADD CONSTRAINT "EnvioCorreo_presupuestoId_fkey" FOREIGN KEY ("presupuestoId") REFERENCES "Presupuesto"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 `;
