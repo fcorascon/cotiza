@@ -202,44 +202,31 @@ export function PresupuestoForm({
   }, [editing]);
 
   /*
-   * Búsqueda de productos en el servidor con debounce: al abrir el
-   * selector y al escribir se consulta /api/productos?vista=combobox
-   * con limite=todos, para mostrar siempre el catálogo completo
-   * (250 ms de pausa al teclear).
+   * Catálogo completo en el selector: al abrir se descarga una sola vez
+   * (limite=todos) y el filtrado se hace en el navegador conforme se
+   * escribe, sin consultas al servidor por tecla.
    */
   useEffect(() => {
-    if (!selectorAbierto) return;
+    if (!selectorAbierto || resultadosProducto.length > 0) return;
     let vigente = true;
-    const texto = busquedaProducto.trim();
-    const temporizador = setTimeout(
-      async () => {
-        setBuscandoProducto(true);
-        try {
-          const params = new URLSearchParams({
-            vista: "combobox",
-            limite: "todos",
-          });
-          if (texto) params.set("busqueda", texto);
-          const respuesta = await fetch(`/api/productos?${params.toString()}`, {
-            cache: "no-store",
-          });
-          const datos = await respuesta.json();
-          if (vigente && respuesta.ok) {
-            setResultadosProducto(Array.isArray(datos) ? datos : []);
-          }
-        } catch {
-          if (vigente) setResultadosProducto([]);
-        } finally {
-          if (vigente) setBuscandoProducto(false);
+    setBuscandoProducto(true);
+    fetch("/api/productos?vista=combobox&limite=todos", { cache: "no-store" })
+      .then((respuesta) => respuesta.json())
+      .then((datos) => {
+        if (vigente && Array.isArray(datos)) {
+          setResultadosProducto(datos);
         }
-      },
-      texto ? 250 : 0
-    );
+      })
+      .catch(() => {
+        if (vigente) setResultadosProducto([]);
+      })
+      .finally(() => {
+        if (vigente) setBuscandoProducto(false);
+      });
     return () => {
       vigente = false;
-      clearTimeout(temporizador);
     };
-  }, [busquedaProducto, selectorAbierto]);
+  }, [busquedaProducto, selectorAbierto, resultadosProducto.length]);
 
   // Totales en vivo: sub total + IVA (por tasa) + total.
   const totales = useMemo(
@@ -547,7 +534,7 @@ export function PresupuestoForm({
                     className="w-[--radix-popover-trigger-width] p-0"
                     align="start"
                   >
-                    <Command shouldFilter={false}>
+                    <Command>
                       <CommandInput
                         placeholder="Buscar por descripción…"
                         value={busquedaProducto}
@@ -565,7 +552,7 @@ export function PresupuestoForm({
                           {resultadosProducto.map((producto) => (
                             <CommandItem
                               key={producto.id}
-                              value={producto.id}
+                              value={producto.descripcion}
                               onSelect={() => {
                                 setProductoElegido(producto);
                                 setErrorCantidadNueva(null);
