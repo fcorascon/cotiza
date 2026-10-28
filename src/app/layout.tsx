@@ -16,19 +16,22 @@ export const metadata: Metadata = {
     "Aplicación para administrar presupuestos: registro y administración de clientes, datos fiscales y de contacto.",
   keywords: ["presupuestos", "clientes", "administración", "gestión"],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/logotipo.png",
+    shortcut: "/logotipo.png",
+    apple: "/logotipo.png",
   },
   openGraph: {
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
-    url: "https://chat.z.ai",
-    siteName: "Z.ai",
+    title: "Administrador de Presupuestos — Comercializadora SunCatcher del Norte",
+    description:
+      "Aplicación para administrar presupuestos: registro y administración de clientes, datos fiscales y de contacto.",
+    siteName: "Administrador de Presupuestos",
     type: "website",
   },
   twitter: {
-    card: "summary_large_image",
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
+    card: "summary",
+    title: "Administrador de Presupuestos — Comercializadora SunCatcher del Norte",
+    description:
+      "Aplicación para administrar presupuestos: registro y administración de clientes, datos fiscales y de contacto.",
   },
 };
 
