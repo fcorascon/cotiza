@@ -437,7 +437,7 @@ export function PresupuestoForm({
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-6" noValidate>
           {/* ── Datos generales ─────────────────────────────────────── */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_240px]">
             <div className="space-y-2">
               <Label htmlFor="cliente-presupuesto">Cliente</Label>
               <Select
@@ -507,7 +507,7 @@ export function PresupuestoForm({
 
           {/* ── Productos ───────────────────────────────────────────── */}
           <div className="space-y-3 rounded-lg border p-4">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_120px_auto] sm:items-start">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_120px_auto] sm:items-start">
               <div className="space-y-2">
                 <Label htmlFor="producto-presupuesto">Producto</Label>
                 <Popover
