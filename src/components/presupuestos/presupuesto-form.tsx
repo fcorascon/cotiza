@@ -203,9 +203,9 @@ export function PresupuestoForm({
 
   /*
    * Búsqueda de productos en el servidor con debounce: al abrir el
-   * selector se muestran los primeros 30 del catálogo y al escribir se
-   * consulta /api/productos?vista=combobox (250 ms de pausa). Así el DOM
-   * nunca renderiza las 699 filas del catálogo completo.
+   * selector y al escribir se consulta /api/productos?vista=combobox
+   * con limite=todos, para mostrar siempre el catálogo completo
+   * (250 ms de pausa al teclear).
    */
   useEffect(() => {
     if (!selectorAbierto) return;
@@ -217,7 +217,7 @@ export function PresupuestoForm({
         try {
           const params = new URLSearchParams({
             vista: "combobox",
-            limite: "30",
+            limite: "todos",
           });
           if (texto) params.set("busqueda", texto);
           const respuesta = await fetch(`/api/productos?${params.toString()}`, {

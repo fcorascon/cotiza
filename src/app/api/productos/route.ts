@@ -42,7 +42,7 @@ async function validarRelaciones(data: {
  * - ?vista=combobox: formato compacto para el selector del presupuesto
  *   (id, descripción, código SAT, subtotal, unidad y tasa), con búsqueda
  *   opcional por descripción (?busqueda=texto) y tope de resultados
- *   (?limite=30, máx. 100).
+ *   (?limite=30, máx. 100; use limite=todos para el catálogo completo).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -50,10 +50,15 @@ export async function GET(request: NextRequest) {
 
     if (searchParams.get("vista") === "combobox") {
       const busqueda = (searchParams.get("busqueda") ?? "").trim();
-      const limiteSolicitado = Number(searchParams.get("limite") ?? 30);
-      const limite =
-        Number.isFinite(limiteSolicitado) && limiteSolicitado > 0
-          ? Math.min(Math.floor(limiteSolicitado), 100)
+      const limiteSolicitado = (searchParams.get("limite") ?? "30").trim();
+
+      // Con limite=todos se devuelve el catálogo completo (sin tope).
+      const sinTope = limiteSolicitado.toLowerCase() === "todos";
+      const numero = Number(limiteSolicitado);
+      const limite = sinTope
+        ? undefined
+        : Number.isFinite(numero) && numero > 0
+          ? Math.min(Math.floor(numero), 100)
           : 30;
 
       const productos = await db.producto.findMany({
