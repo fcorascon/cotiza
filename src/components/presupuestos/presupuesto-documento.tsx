@@ -71,7 +71,7 @@ export function PresupuestoDocumento({
             </div>
           )}
           <div className="min-w-0">
-            <p className="break-words text-xl font-bold leading-tight">
+            <p className="break-words text-base font-bold leading-tight">
               {empresa.nombre}
             </p>
             <p className="mt-1 text-xs text-neutral-600">
@@ -86,7 +86,7 @@ export function PresupuestoDocumento({
 
         <div className="w-full shrink-0 text-left sm:w-auto sm:text-right">
           <p
-            className="text-2xl font-bold uppercase tracking-wide"
+            className="text-lg font-bold uppercase tracking-wide"
             style={{ color }}
           >
             Presupuesto
