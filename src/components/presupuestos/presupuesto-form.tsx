@@ -447,7 +447,7 @@ export function PresupuestoForm({
                   setErrores((previo) => ({ ...previo, clienteId: undefined }));
                 }}
               >
-                <SelectTrigger id="cliente-presupuesto">
+                <SelectTrigger id="cliente-presupuesto" className="w-full">
                   <SelectValue placeholder="Seleccione el cliente" />
                 </SelectTrigger>
                 <SelectContent>
