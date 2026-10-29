@@ -95,6 +95,8 @@ export function PresupuestosTable({
   const [reciboParaImprimir, setReciboParaImprimir] =
     useState<Presupuesto | null>(null);
   const [paraEnviar, setParaEnviar] = useState<Presupuesto | null>(null);
+  const [reciboParaEnviar, setReciboParaEnviar] =
+    useState<Presupuesto | null>(null);
   const [eliminando, setEliminando] = useState(false);
 
   /*
@@ -788,7 +790,15 @@ export function PresupuestosTable({
       {/* Envío del presupuesto por correo electrónico */}
       <EnviarCorreoDialog
         presupuesto={paraEnviar}
+        modo="presupuesto"
         onClose={() => setParaEnviar(null)}
+      />
+
+      {/* Envío del recibo de mercancía por correo electrónico */}
+      <EnviarCorreoDialog
+        presupuesto={reciboParaEnviar}
+        modo="recibo"
+        onClose={() => setReciboParaEnviar(null)}
       />
 
       {/* Vista previa de impresión del documento formal */}
@@ -853,10 +863,23 @@ export function PresupuestosTable({
                 Vista previa · Recibo de mercancía de &quot;
                 {reciboParaImprimir.cliente.razonSocial}&quot;
               </p>
-              <Button size="sm" onClick={() => window.print()}>
-                <Printer className="h-4 w-4" aria-hidden="true" />
-                Imprimir / Guardar PDF
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4" aria-hidden="true" />
+                  Imprimir / Guardar PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setReciboParaImprimir(null);
+                    setReciboParaEnviar(reciboParaImprimir);
+                  }}
+                >
+                  <Mail className="h-4 w-4" aria-hidden="true" />
+                  Enviar por correo
+                </Button>
+              </div>
             </div>
             <div className="hoja-documento mx-auto mt-4 w-full max-w-3xl border bg-white shadow-xl">
               <ReciboMercanciasDocumento

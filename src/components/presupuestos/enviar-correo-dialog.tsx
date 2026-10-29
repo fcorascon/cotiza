@@ -33,17 +33,23 @@ import type { Presupuesto } from "@/lib/types";
 
 type EnviarCorreoDialogProps = {
   presupuesto: Presupuesto | null;
+  /** "presupuesto" envía el documento con montos; "recibo" envía el
+   * recibo de mercancía sin valores monetarios. */
+  modo?: "presupuesto" | "recibo";
   onClose: () => void;
 };
 
 /**
- * Diálogo "Enviar por correo": envía el presupuesto al cliente usando
- * el servidor SMTP configurado en la sección Configuración.
+ * Diálogo "Enviar por correo": envía el presupuesto (o el recibo de
+ * mercancía) al cliente usando el servidor SMTP configurado en la
+ * sección Configuración.
  */
 export function EnviarCorreoDialog({
   presupuesto,
+  modo = "presupuesto",
   onClose,
 }: EnviarCorreoDialogProps) {
+  const esRecibo = modo === "recibo";
   const { toast } = useToast();
   const [enviando, setEnviando] = useState(false);
 
@@ -72,7 +78,7 @@ export function EnviarCorreoDialog({
           "Content-Type": "application/json",
           ...cabeceraSesion(),
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, modo }),
       });
       const data = await response.json().catch(() => ({}));
 
@@ -97,7 +103,9 @@ export function EnviarCorreoDialog({
 
       toast({
         title: "Correo enviado",
-        description: data?.message ?? `El presupuesto fue enviado a ${values.destino}.`,
+        description:
+          data?.message ??
+          `El ${esRecibo ? "recibo" : "presupuesto"} fue enviado a ${values.destino}.`,
       });
       onClose();
     } catch {
@@ -121,7 +129,9 @@ export function EnviarCorreoDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" aria-hidden="true" />
-            Enviar presupuesto por correo
+            {esRecibo
+              ? "Enviar recibo de mercancía por correo"
+              : "Enviar presupuesto por correo"}
           </DialogTitle>
           <DialogDescription>
             Se enviará el presupuesto de{" "}

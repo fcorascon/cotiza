@@ -4,7 +4,10 @@ import { db } from "@/lib/db";
 import { envioCorreoSchema } from "@/lib/validations/configuracion";
 import {
   asuntoPorDefecto,
+  asuntoReciboPorDefecto,
   crearHtmlPresupuesto,
+  crearHtmlReciboMercancias,
+  folioPresupuesto,
 } from "@/lib/correo-plantilla";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -81,6 +84,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const { destino, asunto, mensaje } = parsed.data;
+    /** Modo del correo: presupuesto con montos (default) o recibo de
+     * mercancía sin valores monetarios. */
+    const modo =
+      typeof (body as { modo?: unknown }).modo === "string" &&
+      (body as { modo: string }).modo.toLowerCase() === "recibo"
+        ? "recibo"
+        : "presupuesto";
 
     const presupuesto = await db.presupuesto.findUnique({
       where: { id },
@@ -119,8 +129,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const asuntoFinal = asunto || asuntoPorDefecto(presupuesto, config);
-    const html = crearHtmlPresupuesto(presupuesto, config, mensaje || undefined);
+    const esRecibo = modo === "recibo";
+    const asuntoFinal =
+      asunto ||
+      (esRecibo
+        ? asuntoReciboPorDefecto(presupuesto, config)
+        : asuntoPorDefecto(presupuesto, config));
+    const html = esRecibo
+      ? crearHtmlReciboMercancias(presupuesto, config, mensaje || undefined)
+      : crearHtmlPresupuesto(presupuesto, config, mensaje || undefined);
 
     const transporter = nodemailer.createTransport({
       host: config.smtpHost,
@@ -140,7 +157,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
         subject: asuntoFinal,
         html,
         text: [
-          `PRESUPUESTO ${asuntoPorDefecto(presupuesto, config).replace("Presupuesto ", "")}`,
+          esRecibo
+            ? `RECIBO DE MERCANCÍA ${folioReciboMercancia(presupuesto.id)}`
+            : `PRESUPUESTO ${folioPresupuesto(presupuesto.id)}`,
           `Cliente: ${presupuesto.cliente.razonSocial}`,
           `Fecha: ${presupuesto.fecha}`,
           "",

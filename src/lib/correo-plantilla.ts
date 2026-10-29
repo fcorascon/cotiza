@@ -241,3 +241,146 @@ export function crearHtmlPresupuesto(
 </body>
 </html>`;
 }
+
+/** Folio legible del recibo de mercancía: RCM-XXXXXX (últimos 6 del id). */
+export function folioReciboMercancia(id: string): string {
+  return `RCM-${id.slice(-6).toUpperCase()}`;
+}
+
+/** Asunto por defecto del correo del recibo de mercancía. */
+export function asuntoReciboPorDefecto(
+  presupuesto: DatosPresupuesto & { id: string },
+  config: DatosConfiguracion
+): string {
+  return `Recibo de mercancía ${folioReciboMercancia(presupuesto.id)} - ${config.nombreComercial}`;
+}
+
+/**
+ * Plantilla HTML del correo del recibo de mercancía: mismo diseño que el
+ * documento impreso, sin valores monetarios (cantidad, unidad, código SAT
+ * y artículo).
+ */
+export function crearHtmlReciboMercancias(
+  presupuesto: DatosPresupuesto & { id: string },
+  config: DatosConfiguracion,
+  mensajePersonal?: string
+): string {
+  const color = config.presupuestoColor || "#1D4ED8";
+  const logo = config.presupuestoLogo ?? config.logo ?? null;
+  const folio = folioReciboMercancia(presupuesto.id);
+  const totalArticulos = presupuesto.items.reduce(
+    (suma, item) => suma + item.cantidad,
+    0
+  );
+
+  const filasItems = presupuesto.items
+    .map(
+      (item, indice) => `
+      <tr style="background:${indice % 2 === 0 ? "#ffffff" : "#f8fafc"};">
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;text-align:left;">${item.cantidad}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;text-align:left;">${escapar(item.unidad ?? "—")}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;text-align:left;">${escapar(item.codigoSat ?? "—")}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;">${escapar(item.descripcion)}</td>
+      </tr>`
+    )
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8" /></head>
+<body style="margin:0;padding:0;background:#f1f5f9;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:640px;max-width:96%;background:#ffffff;border-radius:8px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+
+        <!-- Encabezado -->
+        <tr>
+          <td style="background:${color};padding:20px 24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="vertical-align:middle;">
+                  ${
+                    logo
+                      ? `<img src="${logo}" alt="Logotipo ${escapar(config.nombreComercial)}" width="64" style="display:block;max-height:64px;max-width:64px;border:0;background:#ffffff;border-radius:6px;padding:4px;" />`
+                      : ""
+                  }
+                </td>
+                <td style="vertical-align:middle;text-align:right;color:#ffffff;">
+                  <p style="margin:0;font-size:18px;font-weight:bold;">${escapar(config.nombreComercial)}</p>
+                  <p style="margin:2px 0 0;font-size:11px;">RFC: ${escapar(config.rfc)}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Folio y fecha -->
+        <tr>
+          <td style="padding:18px 24px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="vertical-align:middle;">
+                  <p style="margin:0;font-size:18px;font-weight:bold;color:${color};">RECIBO DE MERCANCÍA</p>
+                  <p style="margin:2px 0 0;font-size:13px;color:#475569;">Folio: <strong>${folio}</strong></p>
+                </td>
+                <td style="vertical-align:middle;text-align:right;">
+                  <p style="margin:0;font-size:13px;color:#475569;">Fecha: <strong>${formatearFechaISO(presupuesto.fecha)}</strong></p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        ${
+          mensajePersonal
+            ? `<tr><td style="padding:14px 24px 0;">
+                 <p style="margin:0;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:13px;color:#713f12;font-style:italic;">${escapar(mensajePersonal)}</p>
+               </td></tr>`
+            : ""
+        }
+
+        <!-- Datos del cliente -->
+        <tr><td style="padding:16px 24px 0;">
+          <p style="margin:0 0 4px;font-size:11px;font-weight:bold;letter-spacing:1px;color:#64748b;">CLIENTE</p>
+          <p style="margin:0;font-size:15px;font-weight:bold;color:#0f172a;">${escapar(presupuesto.cliente.razonSocial)}</p>
+        </td></tr>
+
+        <!-- Mercancía recibida (sin montos) -->
+        <tr><td style="padding:16px 24px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;">
+            <tr style="background:${color};">
+              <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:left;">CANT.</th>
+              <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:left;">UNIDAD</th>
+              <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:left;">CÓD. SAT</th>
+              <th style="padding:9px 10px;font-size:11px;color:#ffffff;text-align:left;">ARTÍCULO</th>
+            </tr>
+            ${filasItems || `<tr><td colspan="4" style="padding:14px;text-align:center;color:#64748b;font-size:13px;">Sin partidas registradas.</td></tr>`}
+          </table>
+        </td></tr>
+
+        <!-- Número de artículos -->
+        <tr><td style="padding:12px 24px 0;">
+          <p style="margin:0;font-size:13px;color:#334155;">
+            <strong>Número de artículos:</strong> ${totalArticulos}
+          </p>
+          <p style="margin:4px 0 0;font-size:11px;color:#475569;">
+            Documento sin valores monetarios.
+          </p>
+        </td></tr>
+
+        <!-- Pie -->
+        <tr><td style="padding:22px 24px;">
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 12px;" />
+          <p style="margin:0;font-size:11px;color:#64748b;text-align:center;line-height:1.6;">
+            ${escapar(config.razonLegal)} · ${escapar(config.direccion)}<br />
+            Tel. ${escapar(config.telefono)} · ${escapar(config.email)}<br />
+            Este correo fue generado por el Administrador de Presupuestos.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
