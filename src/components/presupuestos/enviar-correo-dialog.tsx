@@ -134,7 +134,7 @@ export function EnviarCorreoDialog({
               : "Enviar presupuesto por correo"}
           </DialogTitle>
           <DialogDescription>
-            Se enviará el presupuesto de{" "}
+            Se enviará el {esRecibo ? "recibo de mercancía" : "presupuesto"} de{" "}
             <span className="font-semibold text-foreground">
               {presupuesto?.cliente.razonSocial}
             </span>{" "}
