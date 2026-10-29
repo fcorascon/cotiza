@@ -57,7 +57,7 @@ export function ReciboMercanciasDocumento({
             </div>
           )}
           <div className="min-w-0">
-            <p className="break-words text-base font-bold leading-tight">
+            <p className="whitespace-nowrap text-base font-bold leading-tight">
               {empresa.nombre}
             </p>
             <p className="mt-1 text-xs text-neutral-600">
@@ -72,7 +72,7 @@ export function ReciboMercanciasDocumento({
 
         <div className="w-full shrink-0 text-left sm:w-auto sm:text-right">
           <p
-            className="text-lg font-bold uppercase tracking-wide"
+            className="text-base font-bold uppercase tracking-wide"
             style={{ color }}
           >
             Recibo de mercancía
