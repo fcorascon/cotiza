@@ -112,13 +112,16 @@ export function ReciboMercanciasDocumento({
         <table className="w-full table-fixed border-collapse text-left">
           <thead>
             <tr style={{ backgroundColor: color, color: "#ffffff" }}>
-              <th className="w-[22%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[20%] sm:px-2">
+              <th className="w-[12%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[10%] sm:px-2">
                 Cantidad
               </th>
-              <th className="w-[30%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[32%] sm:px-2">
+              <th className="w-[48%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[52%] sm:px-2">
+                Producto
+              </th>
+              <th className="w-[16%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[14%] sm:px-2">
                 Unidad
               </th>
-              <th className="w-[48%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:px-2">
+              <th className="w-[24%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:px-2">
                 Código SAT
               </th>
             </tr>
@@ -131,6 +134,9 @@ export function ReciboMercanciasDocumento({
               >
                 <td className="px-1.5 py-2 align-top tabular-nums sm:px-2">
                   {formatearCantidad.format(item.cantidad)}
+                </td>
+                <td className="px-1.5 py-2 align-top sm:px-2">
+                  <p className="font-medium leading-snug">{item.descripcion}</p>
                 </td>
                 <td className="px-1.5 py-2 align-top sm:px-2">
                   {item.unidad ?? "—"}
