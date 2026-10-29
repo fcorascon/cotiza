@@ -162,16 +162,9 @@ export function ReciboMercanciasDocumento({
 
       {/* Nombre y firma de quien recibe */}
       <section className="mt-10 break-inside-avoid">
-        <div className="grid gap-10 sm:grid-cols-2">
-          <div className="text-center">
-            <div className="mx-auto w-full max-w-[240px] border-t border-neutral-500 pt-1 text-xs text-neutral-600">
-              Nombre de quien recibe
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="mx-auto w-full max-w-[240px] border-t border-neutral-500 pt-1 text-xs text-neutral-600">
-              Firma de quien recibe
-            </div>
+        <div className="text-center">
+          <div className="mx-auto w-full max-w-[320px] border-t border-neutral-500 pt-1 text-xs text-neutral-600">
+            Nombre y firma de quien recibe
           </div>
         </div>
       </section>
