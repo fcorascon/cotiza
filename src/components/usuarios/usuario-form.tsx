@@ -108,22 +108,6 @@ export function UsuarioForm({ editing, onSaved, onCancelEdit }: UsuarioFormProps
     [isEditing]
   );
 
-  const valoresActuales: ValoresForm = editing
-    ? {
-        usuario: editing.usuario,
-        nombre: editing.nombre ?? "",
-        rol: editing.rol,
-        activo: editing.activo,
-        password: "",
-      }
-    : {
-        usuario: "",
-        nombre: "",
-        rol: "USUARIO",
-        activo: true,
-        password: "",
-      };
-
   const form = useForm<ValoresForm>({
     resolver: zodResolver(esquema),
     defaultValues: {
@@ -133,9 +117,28 @@ export function UsuarioForm({ editing, onSaved, onCancelEdit }: UsuarioFormProps
       activo: true,
       password: "",
     },
-    values: valoresActuales,
     mode: "onBlur",
   });
+
+  /**
+   * Carga diferida del usuario en edición: igual que en productos,
+   * el reset debe ejecutarse fuera del frame de montaje para que no
+   * lo vacíe el remontaje del bubble input de Radix.
+   */
+  useEffect(() => {
+    if (!editing) return undefined;
+    const temporizador = setTimeout(() => {
+      form.reset({
+        usuario: editing.usuario,
+        nombre: editing.nombre ?? "",
+        rol: editing.rol,
+        activo: editing.activo,
+        password: "",
+      });
+    }, 50);
+    return () => clearTimeout(temporizador);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, form]);
 
   function handleCancel() {
     form.reset({

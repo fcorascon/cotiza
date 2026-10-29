@@ -50,8 +50,22 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
   const [submitting, setSubmitting] = useState(false);
   const isEditing = Boolean(editing);
 
-  const valoresActuales: ClienteInput = editing
-    ? {
+  const form = useForm<ClienteInput>({
+    resolver: zodResolver(clienteSchema),
+    defaultValues: EMPTY_VALUES,
+    mode: "onBlur",
+  });
+
+  /**
+   * Al seleccionar un cliente para editar, se cargan sus datos. El
+   * reset se difiere fuera del frame de montaje (mismo motivo que el
+   * formulario de productos: Radix remonta sus bubble inputs y si el
+   * reset ocurre en el mismo frame terminan vaciando los valores).
+   */
+  useEffect(() => {
+    if (!editing) return undefined;
+    const temporizador = setTimeout(() => {
+      form.reset({
         razonSocial: editing.razonSocial ?? "",
         rfc: editing.rfc ?? "",
         calle: editing.calle ?? "",
@@ -62,15 +76,11 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
         estado: editing.estado ?? "",
         telefono: editing.telefono ?? "",
         email: editing.email ?? "",
-      }
-    : EMPTY_VALUES;
-
-  const form = useForm<ClienteInput>({
-    resolver: zodResolver(clienteSchema),
-    defaultValues: EMPTY_VALUES,
-    values: valoresActuales,
-    mode: "onBlur",
-  });
+      });
+    }, 50);
+    return () => clearTimeout(temporizador);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, form]);
 
   function handleCancel() {
     form.reset(EMPTY_VALUES);

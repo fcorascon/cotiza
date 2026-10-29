@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Pencil, Package, Save, X } from "lucide-react";
@@ -114,10 +114,12 @@ export function ProductoForm({
   const isEditing = Boolean(editing);
 
   /**
-   * Valores del formulario. Al editar se sincronizan mediante la
-   * propiedad `values` de react-hook-form (mecanismo oficial para
-   * valores externos); el use effect con form.reset se perdia con
-   * React 19 y por eso los selects quedaban en blanco.
+   * Al editar se cargan los valores del producto. El reset se difiere
+   * con setTimeout para que se ejecute DESPUÉS de que los efectos de
+   * montaje de los selects (Radix) terminen: si se aplica en el mismo
+   * frame de montaje, el bubble input oculto de Radix se remonta al
+   * registrar las opciones y termina vaciando los ids de catálogo, por
+   * lo que categoría, unidad e IVA quedaban en blanco al editar.
    */
   const valoresActuales: ProductoInput = editing
     ? {
@@ -135,9 +137,19 @@ export function ProductoForm({
   const form = useForm<ProductoInput>({
     resolver: zodResolver(productoSchema),
     defaultValues: VALORES_INICIALES,
-    values: valoresActuales,
     mode: "onBlur",
   });
+
+  // Carga diferida del producto en edición (evita el remontaje del
+  // bubble input de Radix que borra los selects).
+  useEffect(() => {
+    if (!editing) return undefined;
+    const temporizador = setTimeout(() => {
+      form.reset(valoresActuales);
+    }, 50);
+    return () => clearTimeout(temporizador);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, form]);
 
   // Subtotal en vivo: costo + margen de ganancia %.
   const costoTexto = form.watch("costo");
