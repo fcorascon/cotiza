@@ -296,7 +296,13 @@ export function ProductoForm({
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccione la categoría" />
+                        <SelectValue placeholder="Seleccione la categoría">
+                          {
+                            categorias.find(
+                              (categoria) => categoria.id === field.value
+                            )?.categoria
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -329,7 +335,13 @@ export function ProductoForm({
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccione la unidad" />
+                        <SelectValue placeholder="Seleccione la unidad">
+                          {
+                            unidades.find(
+                              (unidad) => unidad.id === field.value
+                            )?.unidad
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -362,7 +374,14 @@ export function ProductoForm({
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccione la tasa" />
+                        <SelectValue placeholder="Seleccione la tasa">
+                          {(() => {
+                            const iva = ivas.find(
+                              (elemento) => elemento.id === field.value
+                            );
+                            return iva ? `Tasa ${iva.tasa}%` : undefined;
+                          })()}
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

@@ -350,7 +350,9 @@ export function UsuarioForm({ editing, onSaved, onCancelEdit }: UsuarioFormProps
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Seleccione el rol" />
+                        <SelectValue placeholder="Seleccione el rol">
+                        {ETIQUETA_ROL[field.value]}
+                      </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

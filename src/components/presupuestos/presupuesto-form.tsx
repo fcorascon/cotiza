@@ -435,7 +435,13 @@ export function PresupuestoForm({
                 }}
               >
                 <SelectTrigger id="cliente-presupuesto" className="w-full">
-                  <SelectValue placeholder="Seleccione el cliente" />
+                  <SelectValue placeholder="Seleccione el cliente">
+                    {
+                      clientes.find(
+                        (cliente) => cliente.id === clienteId
+                      )?.razonSocial
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {clientes.map((cliente) => (
