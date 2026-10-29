@@ -115,14 +115,14 @@ export function ReciboMercanciasDocumento({
               <th className="w-[12%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[10%] sm:px-2">
                 Cantidad
               </th>
-              <th className="w-[48%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[52%] sm:px-2">
-                Producto
-              </th>
-              <th className="w-[16%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[14%] sm:px-2">
+              <th className="w-[14%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[12%] sm:px-2">
                 Unidad
               </th>
-              <th className="w-[24%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:px-2">
+              <th className="w-[24%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:w-[22%] sm:px-2">
                 Código SAT
+              </th>
+              <th className="w-[50%] px-1.5 py-2 text-left text-[11px] font-semibold uppercase sm:px-2">
+                Artículo
               </th>
             </tr>
           </thead>
@@ -136,13 +136,13 @@ export function ReciboMercanciasDocumento({
                   {formatearCantidad.format(item.cantidad)}
                 </td>
                 <td className="px-1.5 py-2 align-top sm:px-2">
-                  <p className="font-medium leading-snug">{item.descripcion}</p>
-                </td>
-                <td className="px-1.5 py-2 align-top sm:px-2">
                   {item.unidad ?? "—"}
                 </td>
                 <td className="px-1.5 py-2 align-top tabular-nums sm:px-2">
                   {item.codigoSat ?? "—"}
+                </td>
+                <td className="px-1.5 py-2 align-top sm:px-2">
+                  <p className="font-medium leading-snug">{item.descripcion}</p>
                 </td>
               </tr>
             ))}
