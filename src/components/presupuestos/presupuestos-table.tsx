@@ -572,18 +572,30 @@ export function PresupuestosTable({
                 </DialogDescription>
               </DialogHeader>
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => {
-                  setEnVista(null);
-                  setParaImprimir(enVista);
-                }}
-              >
-                <Printer className="h-4 w-4" aria-hidden="true" />
-                Imprimir / Guardar PDF
-              </Button>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEnVista(null);
+                    setParaImprimir(enVista);
+                  }}
+                >
+                  <Printer className="h-4 w-4" aria-hidden="true" />
+                  Imprimir / Guardar PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEnVista(null);
+                    setParaEnviar(enVista);
+                  }}
+                >
+                  <Mail className="h-4 w-4" aria-hidden="true" />
+                  Enviar por correo
+                </Button>
+              </div>
 
               {enVista.observaciones && (
                 <p className="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
@@ -741,10 +753,23 @@ export function PresupuestosTable({
                 Vista previa · Presupuesto de &quot;
                 {paraImprimir.cliente.razonSocial}&quot;
               </p>
-              <Button size="sm" onClick={() => window.print()}>
-                <Printer className="h-4 w-4" aria-hidden="true" />
-                Imprimir / Guardar PDF
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4" aria-hidden="true" />
+                  Imprimir / Guardar PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setParaImprimir(null);
+                    setParaEnviar(paraImprimir);
+                  }}
+                >
+                  <Mail className="h-4 w-4" aria-hidden="true" />
+                  Enviar por correo
+                </Button>
+              </div>
             </div>
             <div className="hoja-documento mx-auto mt-4 w-full max-w-3xl border bg-white shadow-xl">
               <PresupuestoDocumento
