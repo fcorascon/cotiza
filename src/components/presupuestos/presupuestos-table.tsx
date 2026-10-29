@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  ClipboardList,
   Eye,
   Loader2,
   Mail,
@@ -63,6 +64,7 @@ import {
 } from "@/lib/presupuestos-utils";
 import { formatearMoneda } from "@/lib/productos-utils";
 import { PresupuestoDocumento } from "@/components/presupuestos/presupuesto-documento";
+import { ReciboMercanciasDocumento } from "@/components/presupuestos/recibo-mercancias-documento";
 import {
   EnviarCorreoDialog,
 } from "@/components/presupuestos/enviar-correo-dialog";
@@ -90,6 +92,8 @@ export function PresupuestosTable({
   const [porEliminar, setPorEliminar] = useState<Presupuesto | null>(null);
   const [enVista, setEnVista] = useState<Presupuesto | null>(null);
   const [paraImprimir, setParaImprimir] = useState<Presupuesto | null>(null);
+  const [reciboParaImprimir, setReciboParaImprimir] =
+    useState<Presupuesto | null>(null);
   const [paraEnviar, setParaEnviar] = useState<Presupuesto | null>(null);
   const [eliminando, setEliminando] = useState(false);
 
@@ -322,6 +326,24 @@ export function PresupuestosTable({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
+                            onClick={() => setReciboParaImprimir(presupuesto)}
+                            aria-label={`Recibo de mercancía del presupuesto de ${presupuesto.cliente.razonSocial}`}
+                          >
+                            <ClipboardList
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Recibo de mercancía</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => setParaEnviar(presupuesto)}
                             aria-label={`Enviar por correo el presupuesto de ${presupuesto.cliente.razonSocial}`}
                           >
@@ -439,6 +461,28 @@ export function PresupuestosTable({
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Imprimir / PDF</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() =>
+                                    setReciboParaImprimir(presupuesto)
+                                  }
+                                  aria-label={`Recibo de mercancía del presupuesto de ${presupuesto.cliente.razonSocial}`}
+                                >
+                                  <ClipboardList
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Recibo de mercancía
+                              </TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
@@ -594,6 +638,17 @@ export function PresupuestosTable({
                 >
                   <Mail className="h-4 w-4" aria-hidden="true" />
                   Enviar por correo
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEnVista(null);
+                    setReciboParaImprimir(enVista);
+                  }}
+                >
+                  <ClipboardList className="h-4 w-4" aria-hidden="true" />
+                  Recibo de mercancía
                 </Button>
               </div>
 
@@ -774,6 +829,38 @@ export function PresupuestosTable({
             <div className="hoja-documento mx-auto mt-4 w-full max-w-3xl border bg-white shadow-xl">
               <PresupuestoDocumento
                 presupuesto={paraImprimir}
+                configuracion={configuracion}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Vista previa de impresión del recibo de mercancía */}
+      {reciboParaImprimir &&
+        createPortal(
+          <div className="capa-impresion fixed inset-0 z-[70] overflow-y-auto bg-neutral-200/90 p-4 sm:p-8">
+            <div className="barra-impresion sticky top-0 z-10 mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-lg border bg-card p-2 shadow-sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReciboParaImprimir(null)}
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+                Cerrar
+              </Button>
+              <p className="hidden truncate text-sm text-muted-foreground sm:block">
+                Vista previa · Recibo de mercancía de &quot;
+                {reciboParaImprimir.cliente.razonSocial}&quot;
+              </p>
+              <Button size="sm" onClick={() => window.print()}>
+                <Printer className="h-4 w-4" aria-hidden="true" />
+                Imprimir / Guardar PDF
+              </Button>
+            </div>
+            <div className="hoja-documento mx-auto mt-4 w-full max-w-3xl border bg-white shadow-xl">
+              <ReciboMercanciasDocumento
+                presupuesto={reciboParaImprimir}
                 configuracion={configuracion}
               />
             </div>
