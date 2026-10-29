@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Pencil, Package, Save, X } from "lucide-react";
@@ -113,16 +113,14 @@ export function ProductoForm({
   const [submitting, setSubmitting] = useState(false);
   const isEditing = Boolean(editing);
 
-  const form = useForm<ProductoInput>({
-    resolver: zodResolver(productoSchema),
-    defaultValues: VALORES_INICIALES,
-    mode: "onBlur",
-  });
-
-  // Al seleccionar un producto para editar, se carga en el formulario.
-  useEffect(() => {
-    if (editing) {
-      form.reset({
+  /**
+   * Valores del formulario. Al editar se sincronizan mediante la
+   * propiedad `values` de react-hook-form (mecanismo oficial para
+   * valores externos); el use effect con form.reset se perdia con
+   * React 19 y por eso los selects quedaban en blanco.
+   */
+  const valoresActuales: ProductoInput = editing
+    ? {
         codigoSat: editing.codigoSat,
         descripcion: editing.descripcion,
         unidadId: editing.unidadId,
@@ -131,9 +129,15 @@ export function ProductoForm({
         costo: String(editing.costo),
         margen: String(editing.margen),
         notas: editing.notas ?? "",
-      });
-    }
-  }, [editing, form]);
+      }
+    : VALORES_INICIALES;
+
+  const form = useForm<ProductoInput>({
+    resolver: zodResolver(productoSchema),
+    defaultValues: VALORES_INICIALES,
+    values: valoresActuales,
+    mode: "onBlur",
+  });
 
   // Subtotal en vivo: costo + margen de ganancia %.
   const costoTexto = form.watch("costo");

@@ -108,6 +108,22 @@ export function UsuarioForm({ editing, onSaved, onCancelEdit }: UsuarioFormProps
     [isEditing]
   );
 
+  const valoresActuales: ValoresForm = editing
+    ? {
+        usuario: editing.usuario,
+        nombre: editing.nombre ?? "",
+        rol: editing.rol,
+        activo: editing.activo,
+        password: "",
+      }
+    : {
+        usuario: "",
+        nombre: "",
+        rol: "USUARIO",
+        activo: true,
+        password: "",
+      };
+
   const form = useForm<ValoresForm>({
     resolver: zodResolver(esquema),
     defaultValues: {
@@ -117,28 +133,9 @@ export function UsuarioForm({ editing, onSaved, onCancelEdit }: UsuarioFormProps
       activo: true,
       password: "",
     },
+    values: valoresActuales,
     mode: "onBlur",
   });
-
-  useEffect(() => {
-    if (editing) {
-      form.reset({
-        usuario: editing.usuario,
-        nombre: editing.nombre,
-        rol: editing.rol,
-        activo: editing.activo,
-        password: "",
-      });
-    } else {
-      form.reset({
-        usuario: "",
-        nombre: "",
-        rol: "USUARIO",
-        activo: true,
-        password: "",
-      });
-    }
-  }, [editing, form]);
 
   function handleCancel() {
     form.reset({

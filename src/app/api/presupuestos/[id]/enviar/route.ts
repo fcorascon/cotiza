@@ -8,6 +8,7 @@ import {
   crearHtmlPresupuesto,
   crearHtmlReciboMercancias,
   folioPresupuesto,
+  folioReciboMercancia,
 } from "@/lib/correo-plantilla";
 
 type RouteContext = { params: Promise<{ id: string }> };

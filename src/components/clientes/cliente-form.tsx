@@ -50,29 +50,27 @@ export function ClienteForm({ editing, onSaved, onCancelEdit }: ClienteFormProps
   const [submitting, setSubmitting] = useState(false);
   const isEditing = Boolean(editing);
 
+  const valoresActuales: ClienteInput = editing
+    ? {
+        razonSocial: editing.razonSocial ?? "",
+        rfc: editing.rfc ?? "",
+        calle: editing.calle ?? "",
+        numero: editing.numero ?? "",
+        colonia: editing.colonia ?? "",
+        codigoPostal: editing.codigoPostal ?? "",
+        ciudad: editing.ciudad ?? "",
+        estado: editing.estado ?? "",
+        telefono: editing.telefono ?? "",
+        email: editing.email ?? "",
+      }
+    : EMPTY_VALUES;
+
   const form = useForm<ClienteInput>({
     resolver: zodResolver(clienteSchema),
     defaultValues: EMPTY_VALUES,
+    values: valoresActuales,
     mode: "onBlur",
   });
-
-  // Al seleccionar un cliente para editar, se cargan sus datos en el formulario.
-  useEffect(() => {
-    if (editing) {
-      form.reset({
-        razonSocial: editing.razonSocial,
-        rfc: editing.rfc,
-        calle: editing.calle,
-        numero: editing.numero,
-        colonia: editing.colonia,
-        codigoPostal: editing.codigoPostal,
-        ciudad: editing.ciudad,
-        estado: editing.estado,
-        telefono: editing.telefono,
-        email: editing.email,
-      });
-    }
-  }, [editing, form]);
 
   function handleCancel() {
     form.reset(EMPTY_VALUES);
